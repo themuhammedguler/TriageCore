@@ -35,14 +35,15 @@ jobs:
       - name: Astral uv Paket Yoneticisini Kur
         uses: astral-sh/setup-uv@v2
         with:
-          # uv surumunu otomatik yonet
           version: "latest"
-          # Paketleri onbellege alarak her calismayi hizlandir
-          enable-cache: true
 
       # Proje icin Python 3.11 calisma ortamini hazirla
       - name: Python 3.11 Kurulumu
         run: uv python install 3.11
+
+      # Dev bagimliliklarini (ruff, pytest vb.) kur
+      - name: Dev Bagimliliklarini Kur
+        run: uv pip install -e ".[dev]"
 
       # Ruff linter ile PEP8 ve import duzeni denetimi yap
       - name: Ruff Linter Kontrolu
@@ -65,7 +66,6 @@ jobs:
         uses: astral-sh/setup-uv@v2
         with:
           version: "latest"
-          enable-cache: true
 
       # Python 3.11 ortamini kurar
       - name: Python 3.11 Kurulumu
@@ -87,7 +87,7 @@ jobs:
     needs: test
 
     steps:
-      # Kodu klonla
+      # Kodlari klonla
       - name: Kodu Klonla (Checkout)
         uses: actions/checkout@v4
 
@@ -96,7 +96,6 @@ jobs:
         uses: astral-sh/setup-uv@v2
         with:
           version: "latest"
-          enable-cache: true
 
       # Python 3.11 yukle
       - name: Python 3.11 Kurulumu
