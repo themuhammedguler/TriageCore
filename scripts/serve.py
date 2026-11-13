@@ -17,10 +17,10 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 # Asenkron ASGI sunucusu Uvicorn ice aktarilir
-import uvicorn
+import uvicorn  # noqa: E402
 
 # Proje konfigurasyon ayarlari ice aktarilir
-from src.api.config import settings
+from src.api.config import settings  # noqa: E402
 
 
 def start_server():
