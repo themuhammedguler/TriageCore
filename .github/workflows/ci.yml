@@ -1,0 +1,115 @@
+# ==============================================================================
+# TriageCore - Faz 5: GitHub Actions Sürekli Entegrasyon (CI) Pipeline
+# ==============================================================================
+# Bu workflow, her Git Push ve Pull Request tetiklendiğinde otomatik çalışır;
+# kod standartlarını (Ruff), veri bütünlüğünü ve FastAPI endpoint testlerini
+# Astral 'uv' kullanarak saniyeler içinde doğrular.
+# ==============================================================================
+
+# Pipeline basligi
+name: TriageCore CI Pipeline
+
+# Pipeline'in tetiklenecegi Git olaylari (Events)
+on:
+  # Master veya main dalina kod gonderildiginde calisir
+  push:
+    branches: [ master, main ]
+  # Master veya main dalina Pull Request acildiginda calisir
+  pull_request:
+    branches: [ master, main ]
+
+# Tum gorevler icin ortak calisma parametreleri
+jobs:
+  # 1. GOREV: Kod Standartlari ve Linting Denetimi
+  lint:
+    name: Code Quality & Ruff Linter
+    # En guncel Ubuntu sanal makinesinde calistirilir
+    runs-on: ubuntu-latest
+
+    steps:
+      # Git deposundaki kodlari sanal ortama klonlar
+      - name: Kodu Klonla (Checkout)
+        uses: actions/checkout@v4
+
+      # Astral ekibinin resmi ultra-hizli uv yukleyicisini kurar
+      - name: Astral uv Paket Yoneticisini Kur
+        uses: astral-sh/setup-uv@v2
+        with:
+          # uv surumunu otomatik yonet
+          version: "latest"
+          # Paketleri onbellege alarak her calismayi hizlandir
+          enable-cache: true
+
+      # Proje icin Python 3.11 calisma ortamini hazirla
+      - name: Python 3.11 Kurulumu
+        run: uv python install 3.11
+
+      # Ruff linter ile PEP8 ve import duzeni denetimi yap
+      - name: Ruff Linter Kontrolu
+        run: uv run ruff check .
+
+  # 2. GOREV: Birim ve Entegrasyon Test Süiti
+  test:
+    name: Pytest Unit & API Tests
+    runs-on: ubuntu-latest
+    # Lint adimi basarili olmadan testlere gecilmez
+    needs: lint
+
+    steps:
+      # Kodlari klonlar
+      - name: Kodu Klonla (Checkout)
+        uses: actions/checkout@v4
+
+      # uv aracini kurar
+      - name: Astral uv Kurulumu
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+          enable-cache: true
+
+      # Python 3.11 ortamini kurar
+      - name: Python 3.11 Kurulumu
+        run: uv python install 3.11
+
+      # Proje bagimliliklarini ve opsiyonel dev paketlerini kurar
+      - name: Bagimliliklari Yukle
+        run: uv pip install -e ".[dev]"
+
+      # Pytest ile 16 birim ve entegrasyon testini kosturur
+      - name: Pytest Test Suitini Calistir
+        run: uv run pytest --verbose
+
+  # 3. GOREV: Veri Pipeline'ı Smoke Testi (Duman Testi)
+  data-pipeline-smoke-test:
+    name: Medical Data Pipeline Smoke Test
+    runs-on: ubuntu-latest
+    # Test gorevi bittikten sonra calisir
+    needs: test
+
+    steps:
+      # Kodu klonla
+      - name: Kodu Klonla (Checkout)
+        uses: actions/checkout@v4
+
+      # uv yukle
+      - name: Astral uv Kurulumu
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+          enable-cache: true
+
+      # Python 3.11 yukle
+      - name: Python 3.11 Kurulumu
+        run: uv python install 3.11
+
+      # Bagimliliklari yukle
+      - name: Bagimliliklari Yukle
+        run: uv pip install -e ".[dev]"
+
+      # Faz 1'deki veri temizleme ve ChatML JSONL uretimini test et
+      - name: Seed Triage Pipeline Uretimini Dogrula
+        run: |
+          uv run python -m src.data_pipeline.download --seed-only
+          # Uretilen train.jsonl ve val.jsonl dosyalarinin varligini kontrol et
+          test -f data/processed/train.jsonl
+          test -f data/processed/val.jsonl

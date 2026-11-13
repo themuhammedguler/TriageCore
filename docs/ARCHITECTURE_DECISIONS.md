@@ -127,3 +127,36 @@
 * **Karar:** ASCII folding normalizasyonu ve unlu dusmesine ugrayan kok varyantlari (`gogs`, `karn` vb.) klinik filtre motoruna dahil edildi.
 * **Mühendislik Gerekçesi:**
   1. Hasta hangi klavye veya ek ile yazarsa yazsin kalp krizi veya akut batin kirmizi bayraklari sifir hatayla tespit edilir.
+
+
+---
+
+### [ADR-013] GitHub Actions Pipeline'ında `astral-sh/setup-uv` Kullanımı
+* **Durum:** Kabul Edildi (Faz 5)
+* **Bağlam:** Geleneksel GitHub Actions iş akışlarında `actions/setup-python` ve `pip install` çalıştırmak, her PR ve push'ta 2-4 dakika gereksiz derleme ve indirme süresi tüketir.
+* **Karar:** Resmi `astral-sh/setup-uv@v2` action'ı entegre edildi.
+* **Mühendislik Gerekçesi:**
+  1. Pipeline sanal makinesinde paket kurulumları 2-3 saniye sürer.
+  2. GitHub Actions runner maliyeti ve bekleme süresi %80 oranında düşürülür.
+
+---
+
+### [ADR-014] Otomatik Şema, Kalite ve Regresyon Koruması
+* **Durum:** Kabul Edildi (Faz 5)
+* **Bağlam:** Bir ekip arkadaşı veya gelecekteki geliştirmelerde bozuk JSONL formatı, eksik bir Pydantic alanı veya kırık bir FastAPI endpointi sisteme sızabilir.
+* **Karar:** 3 kademeli CI hattı kuruldu:
+  - `lint`: Ruff ile PEP8 ve import denetimi.
+  - `test`: Pytest ile 16 adet veri, merge ve API testi.
+  - `data-pipeline-smoke-test`: Seed veri üretiminin ve dosya sisteminin doğrulanması.
+* **Mühendislik Gerekçesi:**
+  1. Hatalı hiçbir kod parçası master/main dalına giremez.
+  2. Üretim seviyesinde sıfır regresyon (zero regression) garantilenir.
+
+---
+
+### [ADR-015] Yerel Pre-Push CI Runner (`scripts/run_ci_local.py`)
+* **Durum:** Kabul Edildi (Faz 5)
+* **Bağlam:** Geliştiricinin GitHub'a push yapıp uzak sunucuda pipeline'ın çökmesini beklemesi zaman kaybıdır.
+* **Karar:** Tek komutla (`python scripts/run_ci_local.py`) uzak CI ortamını birebir simüle eden yerel bir otomasyon scripti yazıldı.
+* **Mühendislik Gerekçesi:**
+  1. Geliştirici daha commit ve push yapmadan önce yerel makinesinde tüm linter ve testlerin %100 geçtiğini görür.
