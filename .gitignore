@@ -1,0 +1,40 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ruff_cache/
+
+# Datasets and Large Files (Never commit raw/huge medical datasets to Git)
+data/raw/
+data/processed/
+*.jsonl
+*.parquet
+*.csv
+!data/sample_triage.jsonl
+
+# Model Weights and Checkpoints
+models/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+
+# Environment and Secrets
+.env
+.env.local
+*.log
+wandb/
+
+# IDE
+.vscode/
+.idea/

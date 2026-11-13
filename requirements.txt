@@ -1,0 +1,9 @@
+# Phase 1: Data Curation & Pipeline
+datasets>=2.18.0
+pydantic>=2.7.0
+rich>=13.7.0
+tqdm>=4.66.0
+
+# Testing & Quality
+pytest>=8.0.0
+ruff>=0.4.0

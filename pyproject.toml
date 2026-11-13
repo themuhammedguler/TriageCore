@@ -1,0 +1,35 @@
+[project]
+name = "triagecore"
+version = "0.1.0"
+description = "Production-Grade Open-Source Clinical Triage and Medical Dialogue LLM Engine"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "datasets>=2.18.0",
+    "pydantic>=2.7.0",
+    "rich>=13.7.0",
+    "tqdm>=4.66.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.4.0",
+    "uv>=0.13.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
