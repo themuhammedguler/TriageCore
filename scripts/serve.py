@@ -5,6 +5,17 @@
 # interaktif dokumantasyon arayuzunu yerel tarayicida erisilebilir kilar.
 # ==============================================================================
 
+# Sistem yollari ve calisma zamani icin sys modulu yuklenir
+import sys
+
+# Dosya yollari islemleri icin Path modulu yuklenir
+from pathlib import Path
+
+# Proje kok dizinini Python modul arama yoluna (sys.path) ekle
+project_root = Path(__file__).resolve().parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 # Asenkron ASGI sunucusu Uvicorn ice aktarilir
 import uvicorn
 
