@@ -87,3 +87,43 @@
 * **Mühendislik Gerekçesi:**
   1. **Q4_K_M (Medium K-Quants):** Kritik katmanları (attention q/v) 5-6 bit hassasiyette tutarken, daha az hassas MLP ağırlıklarını 4-bit yapar. Perplexity kaybı neredeyse sıfırdır.
   2. **Evrensel Dağıtım:** GGUF formatındaki model, Mac Metal, Linux CUDA veya sadece CPU içeren standart sunucularda saniyede onlarca token üretebilir.
+
+
+---
+
+### [ADR-009] Asenkron FastAPI Mimarisi ve Eşzamanlılık (Semaphore) Yönetimi
+* **Durum:** Kabul Edildi (Faz 4)
+* **Bağlam:** Model cikarim API'sine ayni anda birden fazla istemciden istek geldiginde, GPU veya CPU VRAM'i kontrolsuz paralel islemlerle tukenip OOM ve servis cokmesine yol acabilir.
+* **Karar:** FastAPI `asyncio` altyapisi uzerinde calisan bir `asyncio.Semaphore(max_concurrent_requests)` mimarisi kuruldu.
+* **Mühendislik Gerekçesi:**
+  1. Istekler sunucuyu kilitlemeden asenkron olarak kuyruga alinir.
+  2. Model ayni anda sadece donanimin kaldirabilecegi kadar istek isler, diger istekler sirada bekler.
+
+---
+
+### [ADR-010] Server-Sent Events (SSE) ile Token Streaming (TTFT Optimizasyonu)
+* **Durum:** Kabul Edildi (Faz 4)
+* **Bağlam:** Bir LLM'in 512 tokenlik bir medikal triyaj raporunu uretmesi 3-8 saniye surebilir. Kullaniciyi bos bir ekranda bekletmek kullanici deneyimini zedeler.
+* **Karar:** `POST /v1/triage/stream` endpointi `StreamingResponse` ve `yield` kullanarak Server-Sent Events (SSE) protokolune baglandi.
+* **Mühendislik Gerekçesi:**
+  1. **Time-To-First-Token (TTFT):** Kullanici ilk tokeni <100ms icinde gorur.
+  2. Standart HTTP baglantisi uzerinden ek Websocket overhead'i olmadan basit ve guclu token akisi saglanir.
+
+---
+
+### [ADR-011] Yapılandırılmış Acil Servis Triyajı (ESI 1-5) ve Guardrail Şeması
+* **Durum:** Kabul Edildi (Faz 4)
+* **Bağlam:** Medikal uygulamalar serbest metin dondururse istemcilerin (mobil/web arayuzu) aciliyet renklendirmesi yapmasi ve bildirim gondermesi guvenilmez hale gelir.
+* **Karar:** Pydantic `TriageResponse` semasi icerisinde ESI Seviyesi (1-5), `is_emergency` bayragi, `red_flags` listesi ve onerilen klinik aksiyon standartlastirildi.
+* **Mühendislik Gerekçesi:**
+  1. ESI-1 ve ESI-2 seviyelerindeki kritik vakalarda frontend aninda kirmizi alarm verebilir ve acil cagri (112/911) tusunu one cikarabilir.
+  2. Yasal feragatname her yanitta degismez bir guvenlik bariyeri olarak dondurulur.
+
+---
+
+### [ADR-012] Türkçe Medikal NLP Normalizasyonu ve Ünlü Düşmesi Yönetimi
+* **Durum:** Kabul Edildi (Faz 4)
+* **Bağlam:** Turkce klavye kullanmayan hastalar "göğsüm" yerine "gogsum", "çeneme" yerine "ceneme" yazabilir. Ayrica Turkce dilbilgisindeki unlu dusmesi (orn. `gogus` + `um` = `gogsum`; `karin` + `im` = `karnim`) yuzunden basit `gogus` kok taramalari basarisiz olur.
+* **Karar:** ASCII folding normalizasyonu ve unlu dusmesine ugrayan kok varyantlari (`gogs`, `karn` vb.) klinik filtre motoruna dahil edildi.
+* **Mühendislik Gerekçesi:**
+  1. Hasta hangi klavye veya ek ile yazarsa yazsin kalp krizi veya akut batin kirmizi bayraklari sifir hatayla tespit edilir.
