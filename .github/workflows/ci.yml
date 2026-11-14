@@ -37,17 +37,15 @@ jobs:
         with:
           version: "latest"
 
-      # Proje icin Python 3.11 calisma ortamini hazirla
-      - name: Python 3.11 Kurulumu
-        run: uv python install 3.11
-
-      # Dev bagimliliklarini (ruff, pytest vb.) kur
-      - name: Dev Bagimliliklarini Kur
-        run: uv pip install -e ".[dev]"
+      # Proje icin Python 3.11 sanal ortamini olustur ve dev paketlerini kur
+      - name: Sanal Ortam ve Dev Bagimliliklarini Kur
+        run: |
+          uv venv --python 3.11
+          uv pip install -e ".[dev]"
 
       # Ruff linter ile PEP8 ve import duzeni denetimi yap
       - name: Ruff Linter Kontrolu
-        run: uv run ruff check .
+        run: uv run --no-sync ruff check .
 
   # 2. GOREV: Birim ve Entegrasyon Test Süiti
   test:
@@ -67,17 +65,15 @@ jobs:
         with:
           version: "latest"
 
-      # Python 3.11 ortamini kurar
-      - name: Python 3.11 Kurulumu
-        run: uv python install 3.11
-
-      # Proje bagimliliklarini ve opsiyonel dev paketlerini kurar
-      - name: Bagimliliklari Yukle
-        run: uv pip install -e ".[dev]"
+      # Python 3.11 sanal ortamini olusturur ve dev paketlerini kurar
+      - name: Sanal Ortam ve Bagimliliklari Yukle
+        run: |
+          uv venv --python 3.11
+          uv pip install -e ".[dev]"
 
       # Pytest ile 16 birim ve entegrasyon testini kosturur
       - name: Pytest Test Suitini Calistir
-        run: uv run pytest --verbose
+        run: uv run --no-sync pytest --verbose
 
   # 3. GOREV: Veri Pipeline'ı Smoke Testi (Duman Testi)
   data-pipeline-smoke-test:
@@ -97,18 +93,16 @@ jobs:
         with:
           version: "latest"
 
-      # Python 3.11 yukle
-      - name: Python 3.11 Kurulumu
-        run: uv python install 3.11
-
-      # Bagimliliklari yukle
-      - name: Bagimliliklari Yukle
-        run: uv pip install -e ".[dev]"
+      # Python 3.11 sanal ortamini olustur ve bagimliliklari yukle
+      - name: Sanal Ortam ve Bagimliliklari Yukle
+        run: |
+          uv venv --python 3.11
+          uv pip install -e ".[dev]"
 
       # Faz 1'deki veri temizleme ve ChatML JSONL uretimini test et
       - name: Seed Triage Pipeline Uretimini Dogrula
         run: |
-          uv run python -m src.data_pipeline.download --seed-only
+          uv run --no-sync python -m src.data_pipeline.download --seed-only
           # Uretilen train.jsonl ve val.jsonl dosyalarinin varligini kontrol et
           test -f data/processed/train.jsonl
           test -f data/processed/val.jsonl
