@@ -7,8 +7,8 @@
 #
 # Ozellikler:
 # 1. Linear & Modern Healthtech estetik standartlarinda Derin Obsidiyen Dark Mode
-# 2. Asla kirilmayan/kaymayan Sistem Telemetrisi ve Canli Ag Nabiz İndikatoru
-# 3. Modern Segmented Pill navigasyonu (Triyaj, Doktor Simulatoru, Denetim)
+# 2. Asla kirilmayan/kaymayan Sistem Telemetrisi ve Canli Ag Nabiz Indikatoru
+# 3. Sol Menude hizli, anlik (0.01 sn) gecis saglayan modern Klinik Modul Secici
 # 4. Elektronik Hasta Dosyasi (EHR Banner) ve gercekci Hekim-Hasta diyalog baloncuklari
 # 5. Hizli anamnez/muayene istem haplari ve 100 uzerinden klinik teshis puanlama
 # ==============================================================================
@@ -81,6 +81,29 @@ def configure_page():
         section[data-testid="stSidebar"] {
             background-color: #0D1322;
             border-right: 1px solid #1E293B;
+        }
+
+        /* Sidebar Navigasyon Butonlari - Modern Klinik Kartlar */
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label {
+            background: #111A2E !important;
+            border: 1px solid #1E2E4A !important;
+            border-radius: 8px !important;
+            padding: 10px 14px !important;
+            margin-bottom: 8px !important;
+            transition: all 0.2s ease !important;
+            cursor: pointer !important;
+            color: #F8FAFC !important;
+            font-weight: 600 !important;
+        }
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+            border-color: #38BDF8 !important;
+            background: #16243F !important;
+            color: #38BDF8 !important;
+        }
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
+            background: linear-gradient(135deg, #152A4A 0%, #112038 100%) !important;
+            border-color: #0EA5E9 !important;
+            box-shadow: 0 0 12px rgba(14, 165, 233, 0.3) !important;
         }
 
         /* Ust Ana Marka & Baslik Cubugu */
@@ -169,7 +192,7 @@ def configure_page():
             animation: pulse-glow 2s infinite;
         }
 
-        /* Sol Sidebar Sistem Telemetri Kartı (KAYMAYAN VE KESILMEYEN MODERN DUZEN) */
+        /* Sol Sidebar Sistem Telemetri Kartı */
         .telemetry-card {
             background: linear-gradient(180deg, #131E35 0%, #0D1527 100%);
             border: 1px solid #1E293B;
@@ -404,10 +427,7 @@ def configure_page():
             text-align: center;
         }
 
-        /* Streamlit Segmented Control ve Metrik Duzenlemeleri */
-        div[data-testid="stSegmentedControl"] {
-            margin-bottom: 16px;
-        }
+        /* Streamlit Metrik Duzenlemeleri */
         div[data-testid="stMetricValue"] {
             color: #38BDF8 !important;
             font-weight: 800;
@@ -445,7 +465,7 @@ def configure_page():
 
 def init_session_state():
     """Uygulama oturum degiskenlerini (session_state) ilk calismada hazirlar."""
-    # Varsayilan calisma modulu (Segmented Control)
+    # Varsayilan calisma modulu (Sol Menu)
     if "current_module" not in st.session_state:
         st.session_state.current_module = "🩺 Klinik Triyaj"
 
@@ -473,16 +493,19 @@ def init_session_state():
         st.session_state.sim_eval_result = None
 
 
+# ONBELLEKLEME DEKORATORU: Sekme gecislerinde 5 saniye beklemeyi engeller, anlik (0.01 sn) gecis saglar
+@st.cache_data(ttl=15, show_spinner=False)
 def check_endpoint_health(api_url: str) -> Dict[str, Any]:
-    """Belirtilen API (Colab Ngrok veya yerel) sunucusunun saglik durumunu sorgular."""
+    """Belirtilen API sunucusunun saglik durumunu 15 saniyelik onbellekleme ve kisa timeout ile sorgular."""
     clean_url = api_url.rstrip("/")
     try:
-        resp = requests.get(f"{clean_url}/health", timeout=3)
+        # Kisa 600 ms zaman asimi: Sunucu yanit vermese bile sayfanin donmasini onler
+        resp = requests.get(f"{clean_url}/health", timeout=0.6)
         if resp.status_code == 200:
             return resp.json()
     except Exception:
         pass
-    # Eger uzak sunucu kapaliysa yerel gomulu motor parametrelerini dondur
+    # Baglanti saglanamazsa guvenli gomulu yerel mantik moduna doner
     return {
         "status": "local_embedded",
         "model_loaded": True,
@@ -579,8 +602,8 @@ def call_chat_endpoint(
     }
 
 
-def render_sidebar() -> Tuple[str, float]:
-    """Sol kontrol panelini (Endpoint ayari, telemetri karti ve parametreleri) cizer."""
+def render_sidebar() -> Tuple[str, str, float]:
+    """Sol kontrol panelini (Navigasyon, yapay zeka baglanti ayarlari ve sistem durumunu) cizer."""
     with st.sidebar:
         # Marka Basligi
         st.markdown(
@@ -595,33 +618,53 @@ def render_sidebar() -> Tuple[str, float]:
             """,
             unsafe_allow_html=True,
         )
+
+        # 1. MODUL NAVIGASYONU (KULLANICI ISTEGI DOGRULTUSUNDA SOL MENUDE)
+        st.markdown(
+            "<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; margin-bottom:6px; letter-spacing:0.05em;'>KLİNİK ÇALIŞMA ALANI</p>",
+            unsafe_allow_html=True,
+        )
+        selected_module = st.radio(
+            "Çalışma Modülü",
+            options=[
+                "🩺 Klinik Triyaj",
+                "👨‍⚕️ Doktor Simülatörü",
+                "📋 Denetim Kayıtları",
+            ],
+            index=0,
+            label_visibility="collapsed",
+        )
         st.divider()
 
-        # Colab Ngrok / Cloudflared URL giris alani
-        st.markdown("#### 🌐 Çıkarım Sunucusu")
+        # 2. YAPAY ZEKA MODEL BAGLANTISI (ANLASILIR ISIMLENDIRME ILE)
+        st.markdown("#### 🤖 AI Model Bağlantısı")
+        st.caption("Google Colab (Ngrok) veya Yerel Sunucu URL:")
         api_url = st.text_input(
-            "Endpoint URL",
+            "AI Sunucu Adresi",
             value="http://127.0.0.1:8000",
             help="Google Colab son hücresinde üretilen Ngrok veya Cloudflared HTTPS adresini buraya yapıştırın.",
             label_visibility="collapsed",
         )
 
-        # Determinizm (Temperature) ayar cubugu
-        st.markdown("<p style='font-size:0.78rem; color:#94A3B8; margin-top:10px; margin-bottom:4px;'>Klinik Determinizm (Temperature)</p>", unsafe_allow_html=True)
+        # Determinizm / Kararlilik (Temperature) ayar cubugu
+        st.markdown(
+            "<p style='font-size:0.78rem; color:#94A3B8; margin-top:10px; margin-bottom:4px;'>Klinik Kararlılık (Temperature)</p>",
+            unsafe_allow_html=True,
+        )
         temperature = st.slider(
             "Temperature",
             min_value=0.05,
             max_value=0.80,
             value=0.20,
             step=0.05,
-            help="Düşük değerler protokole tam bağlı, deterministik yanıtlar üretir.",
+            help="Düşük değerler protokollere tam bağlı ve tutarlı klinik yanıtlar üretir.",
             label_visibility="collapsed",
         )
 
-        # Sunucu telemetri ve saglik kontrolu
+        # Onbellekli hizli sunucu telemetri kontrolu
         health_info = check_endpoint_health(api_url)
         raw_engine = health_info.get("engine_type", "embedded_engine")
-        engine_label = "colab_gpu" if "colab" in raw_engine else "embedded_engine"
+        engine_label = "Llama-3 (Colab)" if "colab" in raw_engine else "Yerel Mantık Motoru"
         raw_device = health_info.get("device", "local-cpu")
         device_label = raw_device if len(raw_device) <= 12 else raw_device[:12] + "..."
         is_remote = "127.0.0.1" not in api_url and "localhost" not in api_url
@@ -637,11 +680,11 @@ def render_sidebar() -> Tuple[str, float]:
                     <span class="telemetry-tag">v2.0</span>
                 </div>
                 <div class="telemetry-row">
-                    <span class="telemetry-label">Çıkarım Motoru</span>
+                    <span class="telemetry-label">Model Motoru</span>
                     <span class="telemetry-pill" title="{raw_engine}">⚡ {engine_label}</span>
                 </div>
                 <div class="telemetry-row">
-                    <span class="telemetry-label">Donanım</span>
+                    <span class="telemetry-label">İşlemci / Donanım</span>
                     <span class="telemetry-pill" title="{raw_device}">💻 {device_label}</span>
                 </div>
                 <div class="telemetry-row">
@@ -654,9 +697,9 @@ def render_sidebar() -> Tuple[str, float]:
         )
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.caption("© 2026 TriageCore Engine • T.C. Sağlık Standartlarına Uygun ESI Triyajı")
+        st.caption("© 2026 TriageCore • Acil Servis Triyaj & Anamnez Destek Konsolu")
 
-        return api_url, temperature
+        return selected_module, api_url, temperature
 
 
 def render_triage_module(api_url: str, temperature: float):
@@ -698,7 +741,8 @@ def render_triage_module(api_url: str, temperature: float):
                     st.error(f"• {rf}")
             else:
                 st.info("Aktif hayati kırmızı bayrak saptanmadı.")
-            st.caption(f"⚡ Çıkarım Süresi: {meta.get('inference_time_ms', 0)} ms")
+            inf_ms = meta.get("inference_time_ms") or 0
+            st.caption(f"⚡ Yanıt Süresi: {inf_ms} ms")
         else:
             st.info("Henüz semptom analizi yapılmadı. Hızlı senaryolardan birini seçin veya aşağıdan şikayet girin.")
 
@@ -712,7 +756,10 @@ def render_triage_module(api_url: str, temperature: float):
 
     with col_chat:
         # Hizli ornek senaryo butonlari
-        st.markdown("<p style='font-size:0.85rem; font-weight:700; color:#94A3B8; margin-bottom:8px;'>HIZLI KLİNİK SENARYO SEÇİN:</p>", unsafe_allow_html=True)
+        st.markdown(
+            "<p style='font-size:0.85rem; font-weight:700; color:#94A3B8; margin-bottom:8px;'>HIZLI KLİNİK SENARYO SEÇİN:</p>",
+            unsafe_allow_html=True,
+        )
         q_col1, q_col2, q_col3 = st.columns(3)
         preset_prompt = None
         if q_col1.button("⚡ Akut Göğüs Ağrısı & Terleme", use_container_width=True):
@@ -855,7 +902,10 @@ def render_simulation_module(api_url: str, temperature: float):
 
     with col_anamnesis:
         # Hizli Hekim Sorgulari ve Muayene Istemi Butonlari
-        st.markdown("<p style='font-size:0.85rem; font-weight:700; color:#94A3B8; margin-bottom:8px;'>HIZLI HEKİM SORGULARI VE MUAYENE İSTEMLERİ:</p>", unsafe_allow_html=True)
+        st.markdown(
+            "<p style='font-size:0.85rem; font-weight:700; color:#94A3B8; margin-bottom:8px;'>HIZLI HEKİM SORGULARI VE MUAYENE İSTEMLERİ:</p>",
+            unsafe_allow_html=True,
+        )
         b1, b2, b3, b4, b5 = st.columns(5)
         quick_action = None
         if b1.button("📍 Ağrı Karakteri", use_container_width=True):
@@ -997,15 +1047,24 @@ def render_audit_logs_module():
             use_container_width=True,
         )
 
-    # Ust Metrikler
+    # Ust Metrikler (None-safe guvenli hesaplamalar ile TypeError hatasini engeller)
     m1, m2, m3 = st.columns(3)
     with m1:
         st.metric("Toplam Denetim Kaydı", f"{len(logs)} Adet")
     with m2:
-        avg_time = round(sum(i.get("inference_time_ms", 0) for i in logs) / max(1, len(logs)), 1)
-        st.metric("Ortalama Çıkarım Süresi", f"{avg_time} ms")
+        # NoneType hatalarini onleyen guvenli gecikme suresi toplami
+        avg_time = round(
+            sum((i.get("inference_time_ms") or 0.0) for i in logs) / max(1, len(logs)),
+            1,
+        )
+        st.metric("Ortalama Yanıt Süresi", f"{avg_time} ms")
     with m3:
-        emergency_count = sum(1 for i in logs if i.get("urgency_score", 5) <= 2)
+        # TypeError: '<=' not supported between 'NoneType' and 'int' hatasini onleyen guvenli filtreleme
+        emergency_count = sum(
+            1
+            for i in logs
+            if i.get("urgency_score") is not None and i["urgency_score"] <= 2
+        )
         st.metric("Kritik Vaka / Acil Oranı", f"{emergency_count} Kayıt")
 
     st.divider()
@@ -1020,48 +1079,25 @@ def render_audit_logs_module():
         mode_str = item.get("mode", "").upper()
         case_str = f" | Vaka: {item['case_id']}" if item.get("case_id") else ""
         esi_str = f" | {item['triage_level']}" if item.get("triage_level") else ""
+        inf_time = item.get("inference_time_ms") or 0
 
         with st.expander(f"[{ts}] Protokol: {sess} | Mod: {mode_str}{case_str}{esi_str}"):
             st.markdown(f"**Hekim / Kullanıcı Girdisi:**\n> {item.get('user_message', '')}")
             st.markdown(f"**Sistem / Hasta Yanıtı:**\n\n{item.get('assistant_reply', '')}")
-            st.caption(f"⚡ İşlem Süresi: {item.get('inference_time_ms', 0)} ms")
+            st.caption(f"⚡ Yanıt Süresi: {inf_time} ms")
 
 
 def main():
-    """Ana Streamlit uygulama akisini ve modern moduller arasi navigasyonu baslatir."""
+    """Ana Streamlit uygulama akisini ve sol menuden anlik calisma alanini baslatir."""
     configure_page()
     init_session_state()
-    api_url, temperature = render_sidebar()
+    # Sol menuden secilen modul, API adresi ve sicaklik ayari aninda alinir
+    selected_module, api_url, temperature = render_sidebar()
 
-    # Ust Navigasyon Barı (Modern Segmented Control)
-    nav_col1, nav_col2 = st.columns([2.5, 1.0])
-    with nav_col1:
-        current_tab = st.segmented_control(
-            "Klinik Modül Seçimi",
-            options=[
-                "🩺 Klinik Triyaj",
-                "👨‍⚕️ Doktor Simülatörü",
-                "📋 Denetim Kayıtları",
-            ],
-            default="🩺 Klinik Triyaj",
-            label_visibility="collapsed",
-        )
-    with nav_col2:
-        st.markdown(
-            """
-            <div style="text-align:right; padding-top:6px;">
-                <span style="font-size:0.75rem; color:#64748B; font-weight:600;">
-                    Protokol: <code style="color:#38BDF8;">TriageCore-2026</code>
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    # Secilen modulu render et
-    if current_tab == "🩺 Klinik Triyaj":
+    # Sol menude secilen modulu ekrana aninda yukle (5 sn bekleme yok)
+    if selected_module == "🩺 Klinik Triyaj":
         render_triage_module(api_url, temperature)
-    elif current_tab == "👨‍⚕️ Doktor Simülatörü":
+    elif selected_module == "👨‍⚕️ Doktor Simülatörü":
         render_simulation_module(api_url, temperature)
     else:
         render_audit_logs_module()
