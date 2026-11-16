@@ -7,17 +7,25 @@
 # ==============================================================================
 
 [theme]
+# Temel koyu tema sablonu aktif edilir
 base = "dark"
-primaryColor = "#0EA5E9"           # Klinik Camgöbeği (Medical Sky Cyan)
-backgroundColor = "#0B0F19"        # Derin Obsidiyen / Koyu Arka Plan
-secondaryBackgroundColor = "#0F172A" # Kenar Çubuğu ve Panel Koyu Zemin
-textColor = "#F8FAFC"              # Yüksek Kontrastlı Beyaz Metin
+# Kurumsal klinik camgobegi vurgu rengi (Medical Sky Cyan)
+primaryColor = "#0EA5E9"
+# Derin obsidiyen arka plan rengi
+backgroundColor = "#0B0F19"
+# Kenar cubugu ve kart panelleri icin ikincil koyu zemin
+secondaryBackgroundColor = "#0F172A"
+# Yuksek okunurluk saglayan temiz beyaz metin rengi
+textColor = "#F8FAFC"
+# Okunabilirlik icin temiz modern tirnaksiz yazi tipi
 font = "sans serif"
 
 [server]
+# Sunucunun tarayiciyi otomatik acmadan arka planda baslamasi saglanir
 headless = true
-enableCORS = false
-enableXsrfProtection = false
+# Streamlit varsayilan yerel sunucu portu
+port = 8501
 
 [browser]
+# Anonim kullanim istatistikleri toplamasi tamamen kapatilir
 gatherUsageStats = false

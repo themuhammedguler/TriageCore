@@ -1,0 +1,12 @@
+# ==============================================================================
+# Taplo TOML Linter ve Dil Sunucusu Kural Yapilandirmasi
+# ==============================================================================
+# .streamlit/config.toml dosyasinin Rust Cargo semasiyla eslesip
+# yanlis hata vermesini (false-positive 'Property not allowed') engeller.
+# ==============================================================================
+
+[[rule]]
+include = [".streamlit/config.toml"]
+
+[rule.schema]
+enabled = false
