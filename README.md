@@ -7,6 +7,7 @@
 
 <br/>
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-triagecore.streamlit.app-38BDF8?style=for-the-badge&logo=streamlit&logoColor=white)](https://triagecore.streamlit.app/)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-CDSS%20Dark%20Console-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
@@ -15,6 +16,10 @@
 [![llama.cpp GGUF](https://img.shields.io/badge/llama.cpp-Q4__K__M%20GGUF-8B5CF6?style=for-the-badge)](https://github.com/ggerganov/llama.cpp)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions%20Passing-success?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/themuhammedguler/TriageCore/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+
+<br/>
+
+🌐 **Canlı Web Konsolu:** [triagecore.streamlit.app](https://triagecore.streamlit.app/)
 
 <br/>
 
@@ -109,6 +114,8 @@ Arayüz, yapay zeka klişelerinden (robot avatarları, oyuncak sohbet balonları
 ---
 
 ## 🚀 Hızlı Başlangıç
+
+> 🌐 **Canlı Uygulama:** Projeyi yerel bilgisayarınıza kurmadan doğrudan bulutta test etmek için canlı sürümümüzü ziyaret edebilirsiniz: **[https://triagecore.streamlit.app/](https://triagecore.streamlit.app/)**
 
 ### 1. Ortamın Kurulumu (Modern `uv` ile)
 ```bash

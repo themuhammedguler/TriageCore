@@ -22,6 +22,9 @@ import logging
 # Rastgele vaka secimi icin random modulu yuklenir
 import random
 
+# Duzenli ifadeler (regex) icin re modulu yuklenir
+import re
+
 # Sistem yollarini yonetmek icin sys modulu yuklenir
 import sys
 
@@ -640,20 +643,23 @@ def call_chat_endpoint(
             # Eger uzak Colab sunucusundan geliyorsa yerel denetim dosyasina da kaydet
             if "127.0.0.1" not in clean_url and "localhost" not in clean_url:
                 reply_text = data.get("reply", "")
-                # Yanit icinde ESI seviyesi metinsel olarak geciyorsa badge ve puanı dinamik guncelle
-                if any(k in reply_text for k in ["ESI Seviye 1", "ESI-1", "Resüsitasyon", "Kardiyak", "Miyokard"]):
+                # Regex ile yanit metninden ESI seviyesini esnek tespit et (ESI-4, ESI-Seviye: 4, ESI Seviye 4 vb.)
+                esi_match = re.search(r"ESI[- ]*(?:Seviye)?[: ]*([1-5])", reply_text, re.IGNORECASE)
+                detected_level = int(esi_match.group(1)) if esi_match else None
+
+                if detected_level == 1 or any(k in reply_text for k in ["ESI Seviye 1", "ESI-1", "Resüsitasyon", "Kardiyak", "Miyokard"]):
                     data["urgency_score"] = 1
                     data["triage_level"] = "ESI-1: Resuscitation (Hayati Tehlike / Derhal Mudahale)"
                     data["is_emergency"] = True
-                elif any(k in reply_text for k in ["ESI Seviye 2", "ESI-2", "Acil Durum", "Apandisit", "Emboli"]):
+                elif detected_level == 2 or any(k in reply_text for k in ["ESI Seviye 2", "ESI-2", "Acil Durum", "Apandisit", "Emboli"]):
                     data["urgency_score"] = 2
                     data["triage_level"] = "ESI-2: Emergency (Acil Servis / 10-15 Dk)"
                     data["is_emergency"] = True
-                elif any(k in reply_text for k in ["ESI Seviye 4", "ESI-4", "Yarı Acil", "Poliklinik", "Sistit", "Öksürük"]):
+                elif detected_level == 4 or any(k in reply_text for k in ["ESI Seviye 4", "ESI-4", "ESI-Seviye: 4", "Yarı Acil", "Poliklinik", "Sistit", "Öksürük", "öksürük"]):
                     data["urgency_score"] = 4
                     data["triage_level"] = "ESI-4: Less Urgent (Yarı Acil / Poliklinik Başvurusu)"
                     data["is_emergency"] = False
-                elif any(k in reply_text for k in ["ESI Seviye 5", "ESI-5", "Rutin Takip"]):
+                elif detected_level == 5 or any(k in reply_text for k in ["ESI Seviye 5", "ESI-5", "Rutin Takip"]):
                     data["urgency_score"] = 5
                     data["triage_level"] = "ESI-5: Non-Urgent (Acil Değil / Rutin Takip)"
                     data["is_emergency"] = False
