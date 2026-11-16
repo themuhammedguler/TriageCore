@@ -7,8 +7,8 @@
 #
 # Ozellikler:
 # 1. Linear & Modern Healthtech estetik standartlarinda Derin Obsidiyen Dark Mode
-# 2. Asla kirilmayan/kaymayan Sistem Telemetrisi ve Canli Ag Nabiz Indikatoru
-# 3. Sol Menude hizli, anlik (0.01 sn) gecis saglayan modern Klinik Modul Secici
+# 2. Asla kirilmayan/kesilmeyen Sistem Telemetrisi ve Canli Ag Nabiz Indikatoru
+# 3. Sol Menude Buyuk, Parlayan (Noktasiz) Etkilesimli Klinik Navigasyon Kartlari
 # 4. Elektronik Hasta Dosyasi (EHR Banner) ve gercekci Hekim-Hasta diyalog baloncuklari
 # 5. Hizli anamnez/muayene istem haplari ve 100 uzerinden klinik teshis puanlama
 # ==============================================================================
@@ -77,33 +77,95 @@ def configure_page():
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
+        /* Streamlit basliklarinin sagindaki otomatik baglanti kopyalama (zincir) ikonlarini gizle */
+        .stHeading a,
+        a.anchorjs-link,
+        button[data-testid="stHeaderAction"],
+        a[data-testid="stHeaderAction"],
+        div[data-testid="stHeadingAction"],
+        [data-testid="stHeading"] a {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
         /* Sidebar Koyu Zemin ve Kenarlik */
         section[data-testid="stSidebar"] {
             background-color: #0D1322;
             border-right: 1px solid #1E293B;
         }
 
-        /* Sidebar Navigasyon Butonlari - Modern Klinik Kartlar */
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label {
+        /* Sol Sidebar Marka Alani - Parlayan Logo ve Gradyan Metin */
+        .sidebar-brand-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: linear-gradient(135deg, #0F172A 0%, #131E35 100%);
+            border: 1px solid #1E2E4A;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+        .brand-logo-glow {
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 10px rgba(14, 165, 233, 0.65));
+        }
+        .brand-title-gradient {
+            font-size: 1.38rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 50%, #818CF8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.15;
+        }
+        .brand-subtitle-pill {
+            font-size: 0.70rem;
+            font-weight: 700;
+            color: #94A3B8;
+            letter-spacing: 0.05em;
+            margin-top: 3px;
+            text-transform: uppercase;
+        }
+
+        /* Sidebar Buyuk Navigasyon Kartlari (Noktasiz, Buyuk, Parlayan) */
+        section[data-testid="stSidebar"] div.stButton > button {
+            height: auto !important;
+            min-height: 62px !important;
+            padding: 12px 16px !important;
+            text-align: left !important;
+            border-radius: 10px !important;
+            white-space: pre-line !important;
+            line-height: 1.4 !important;
+            font-size: 0.94rem !important;
+            display: block !important;
+            margin-bottom: 8px !important;
+            transition: all 0.25s ease !important;
+        }
+
+        /* Aktif Kart: Aydinlik Yanar, Canli Camgobegi Gradyan ve Neon Isilti */
+        section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%) !important;
+            border: 1px solid #38BDF8 !important;
+            color: #FFFFFF !important;
+            font-weight: 800 !important;
+            box-shadow: 0 0 18px rgba(14, 165, 233, 0.45) !important;
+        }
+
+        /* Pasif Kart: Sonuk, Koyu Arduvaz */
+        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"] {
             background: #111A2E !important;
             border: 1px solid #1E2E4A !important;
-            border-radius: 8px !important;
-            padding: 10px 14px !important;
-            margin-bottom: 8px !important;
-            transition: all 0.2s ease !important;
-            cursor: pointer !important;
-            color: #F8FAFC !important;
+            color: #94A3B8 !important;
             font-weight: 600 !important;
+            box-shadow: none !important;
         }
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+        section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover {
             border-color: #38BDF8 !important;
-            background: #16243F !important;
-            color: #38BDF8 !important;
-        }
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
-            background: linear-gradient(135deg, #152A4A 0%, #112038 100%) !important;
-            border-color: #0EA5E9 !important;
-            box-shadow: 0 0 12px rgba(14, 165, 233, 0.3) !important;
+            background: #152238 !important;
+            color: #F8FAFC !important;
         }
 
         /* Ust Ana Marka & Baslik Cubugu */
@@ -192,7 +254,7 @@ def configure_page():
             animation: pulse-glow 2s infinite;
         }
 
-        /* Sol Sidebar Sistem Telemetri Kartı */
+        /* Sol Sidebar Sistem Telemetri Kartı (ASLA KESILMEYEN VE TAM METIN GOSTEREN YAPI) */
         .telemetry-card {
             background: linear-gradient(180deg, #131E35 0%, #0D1527 100%);
             border: 1px solid #1E293B;
@@ -228,6 +290,7 @@ def configure_page():
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 10px;
             margin-bottom: 8px;
         }
         .telemetry-row:last-child {
@@ -240,9 +303,10 @@ def configure_page():
             white-space: nowrap;
             letter-spacing: 0.02em;
         }
+        /* max-width kaldirildi: Etiketler asla 'mo..' seklinde kesilmez */
         .telemetry-pill {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.72rem;
+            font-size: 0.74rem;
             font-weight: 600;
             color: #38BDF8;
             background: #080D1A;
@@ -250,9 +314,6 @@ def configure_page():
             padding: 3px 8px;
             border-radius: 6px;
             white-space: nowrap;
-            max-width: 140px;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         /* Elektronik Hasta Kabul Dosyasi (EHR Banner) */
@@ -436,27 +497,6 @@ def configure_page():
             color: #94A3B8 !important;
             font-size: 0.80rem !important;
         }
-
-        /* Butonlarin Koyu Temaya Uygun Estetik Koseleri */
-        button[kind="secondary"] {
-            border-radius: 8px !important;
-            border: 1px solid #233554 !important;
-            background: #111A2E !important;
-            color: #E2E8F0 !important;
-            transition: all 0.2s ease;
-        }
-        button[kind="secondary"]:hover {
-            border-color: #38BDF8 !important;
-            color: #38BDF8 !important;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2) !important;
-        }
-        button[kind="primary"] {
-            border-radius: 8px !important;
-            background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%) !important;
-            border: none !important;
-            font-weight: 700 !important;
-            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35) !important;
-        }
     </style>
     """
     # CSS stillerini sayfaya gom
@@ -465,7 +505,7 @@ def configure_page():
 
 def init_session_state():
     """Uygulama oturum degiskenlerini (session_state) ilk calismada hazirlar."""
-    # Varsayilan calisma modulu (Sol Menu)
+    # Varsayilan calisma modulu (Sol Menu Kart Secimi)
     if "current_module" not in st.session_state:
         st.session_state.current_module = "🩺 Klinik Triyaj"
 
@@ -603,42 +643,51 @@ def call_chat_endpoint(
 
 
 def render_sidebar() -> Tuple[str, str, float]:
-    """Sol kontrol panelini (Navigasyon, yapay zeka baglanti ayarlari ve sistem durumunu) cizer."""
+    """Sol kontrol panelini (Parlayan kartlar, baglanti ayari ve sistem telemetrisini) cizer."""
     with st.sidebar:
-        # Marka Basligi
+        # 1. MARKA BASLIGI (GELISMIS TIPOGRAFI, PARLAYAN LOGO VE CDSS ROZETI)
         st.markdown(
             """
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                <span style="font-size:1.6rem;">🩺</span>
-                <div>
-                    <h3 style="margin:0; font-size:1.25rem; font-weight:800; color:#F8FAFC; letter-spacing:-0.01em;">TriageCore</h3>
-                    <p style="margin:0; font-size:0.75rem; color:#94A3B8; font-weight:600;">Klinik Karar Destek & CDSS</p>
+            <div class="sidebar-brand-card">
+                <div class="brand-logo-glow">🩺</div>
+                <div class="brand-text-wrap">
+                    <div class="brand-title-gradient">TriageCore</div>
+                    <div class="brand-subtitle-pill">Klinik Karar Destek & CDSS</div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # 1. MODUL NAVIGASYONU (KULLANICI ISTEGI DOGRULTUSUNDA SOL MENUDE)
+        # 2. BUYUK VE PARLAYAN KART NAVIGASYONU (NOKTALI ILKEL RADYO TAMAMEN KALDIRILDI)
         st.markdown(
-            "<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; margin-bottom:6px; letter-spacing:0.05em;'>KLİNİK ÇALIŞMA ALANI</p>",
+            "<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; margin-bottom:8px; letter-spacing:0.06em;'>KLİNİK ÇALIŞMA ALANI</p>",
             unsafe_allow_html=True,
         )
-        selected_module = st.radio(
-            "Çalışma Modülü",
-            options=[
-                "🩺 Klinik Triyaj",
-                "👨‍⚕️ Doktor Simülatörü",
-                "📋 Denetim Kayıtları",
-            ],
-            index=0,
-            label_visibility="collapsed",
-        )
+
+        nav_options = [
+            ("🩺 Klinik Triyaj", "Acil Servis ESI Triyajı & Çok Turlu Takip"),
+            ("👨‍⚕️ Doktor Simülatörü", "Hekim Anamnez, Muayene & Tanı"),
+            ("📋 Denetim Kayıtları", "Klinik Görüşme İzleri & Denetim Logları"),
+        ]
+
+        # Her secenek icin aydinlik/parlayan veya sonuk buyuk kart butonu render edilir
+        for mod_title, mod_desc in nav_options:
+            is_active = st.session_state.current_module == mod_title
+            btn_label = f"{mod_title}\n{mod_desc}"
+            if st.button(
+                btn_label,
+                key=f"nav_card_{mod_title}",
+                type="primary" if is_active else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state.current_module = mod_title
+                st.rerun()
+
         st.divider()
 
-        # 2. YAPAY ZEKA MODEL BAGLANTISI (ANLASILIR ISIMLENDIRME ILE)
+        # 3. YAPAY ZEKA MODEL BAGLANTISI (GEREKSIZ ACIKLAMALAR KALDIRILDI)
         st.markdown("#### 🤖 AI Model Bağlantısı")
-        st.caption("Google Colab (Ngrok) veya Yerel Sunucu URL:")
         api_url = st.text_input(
             "AI Sunucu Adresi",
             value="http://127.0.0.1:8000",
@@ -670,7 +719,7 @@ def render_sidebar() -> Tuple[str, str, float]:
         is_remote = "127.0.0.1" not in api_url and "localhost" not in api_url
         conn_label = "Uzak HTTPS" if is_remote else "Yerel / Gomulu"
 
-        # ASLA SATIR BOLUNMESI VEYA KAYMA YAPMAYAN YENI TELEMETRI KARTI
+        # ASLA SATIR KESILMESI YAPMAYAN VE TAM METIN GOSTEREN TELEMETRI KARTI
         st.markdown(
             f"""
             <div class="telemetry-card">
@@ -696,10 +745,8 @@ def render_sidebar() -> Tuple[str, str, float]:
             unsafe_allow_html=True,
         )
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.caption("© 2026 TriageCore • Acil Servis Triyaj & Anamnez Destek Konsolu")
-
-        return selected_module, api_url, temperature
+        # Gereksiz telif yazisi kaldirildi
+        return st.session_state.current_module, api_url, temperature
 
 
 def render_triage_module(api_url: str, temperature: float):
@@ -1088,13 +1135,13 @@ def render_audit_logs_module():
 
 
 def main():
-    """Ana Streamlit uygulama akisini ve sol menuden anlik calisma alanini baslatir."""
+    """Ana Streamlit uygulama akisini ve sol menudeki buyuk kart navigasyonunu baslatir."""
     configure_page()
     init_session_state()
-    # Sol menuden secilen modul, API adresi ve sicaklik ayari aninda alinir
+    # Sol menuden secilen modul, API adresi ve sicaklik ayari alinir
     selected_module, api_url, temperature = render_sidebar()
 
-    # Sol menude secilen modulu ekrana aninda yukle (5 sn bekleme yok)
+    # Sol menude secilen modulu ekrana aninda yukle
     if selected_module == "🩺 Klinik Triyaj":
         render_triage_module(api_url, temperature)
     elif selected_module == "👨‍⚕️ Doktor Simülatörü":
