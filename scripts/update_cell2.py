@@ -7,33 +7,48 @@ new_cell2 = """# Isletim sistemi ve dosya yolu islemleri icin os ve pathlib modu
 import os
 from pathlib import Path
 
-# Google Colab ortaminda olup olmadigimizi kontrol ederek Drive baglantisini baslatir
+# Google Colab ortaminda olup olmadigimiz tespit edilir
 try:
     from google.colab import drive
-
-    # Eger Drive zaten bagliysa (ornegin sol paneldeki klasor ikonundan baglandiysa) tekrar sorma
-    if not Path("/content/drive/MyDrive").exists():
-        try:
-            drive.mount("/content/drive", force_remount=False)
-        except Exception as e:
-            print(f"[!] Standart drive.mount uyarisi: {e}")
-            print("[*] 'auth.authenticate_user()' ile alternatif Google kimlik dogrulamasi deneniyor...")
-            try:
-                from google.colab import auth
-                auth.authenticate_user()
-                drive.mount("/content/drive", force_remount=True)
-            except Exception as auth_err:
-                print(f"[!] Otomatik yetkilendirme basarisiz: {auth_err}")
-                print("[*] Lutfen Colab sol panelindeki Klasor (📁) simgesine tiklayip uzerinde Drive simgesi olan butona tiklayarak Drive'i manuel baglayiniz.")
-                raise auth_err
-
-    # Drive uzerindeki ana 'AI/TriageCore' proje dizini tanimlanir
-    DRIVE_BASE_DIR = Path("/content/drive/MyDrive/AI/TriageCore")
-    print(f"[+] Google Drive basariyla baglandi: {DRIVE_BASE_DIR}")
+    is_colab = True
 except ImportError:
-    # Eger Colab disinda yerel bir Jupyter ortaminda calisiliyorsa yerel klasor kullanilir
+    is_colab = False
+
+# ==============================================================================
+# GOOGLE DRIVE VEYA YUKSEK HIZLI YEREL COLAB SSD DISKI (Hatasiz & Kesintisiz)
+# ==============================================================================
+# Eger Google Drive izin penceresi tarayicinizda 'credential propagation' hatasi
+# veriyorsa veya ugrasmak istemiyorsaniz, sistem otomatik olarak Colab'in 100 GB'lik
+# yuksek hizli SSD diskini (/content/AI/TriageCore) kullanir. Egitim ve Ngrok
+# sunucusu hicbir kesinti olmadan calismaya devam eder!
+
+USE_GOOGLE_DRIVE = True   # True: Drive'a baglanmayi dener; False: Dogrudan hizli SSD kullanir
+drive_mounted = False
+
+if is_colab and USE_GOOGLE_DRIVE:
+    # 1. Zaten bagli mi kontrol et
+    if Path("/content/drive/MyDrive").exists():
+        drive_mounted = True
+        print("[+] Google Drive zaten bagli! '/MyDrive/AI/TriageCore' kullaniliyor.")
+    else:
+        try:
+            print("[*] Google Drive baglantisi deneniyor...")
+            drive.mount("/content/drive", force_remount=False)
+            if Path("/content/drive/MyDrive").exists():
+                drive_mounted = True
+                print("[+] Google Drive basariyla baglandi!")
+        except Exception as err:
+            print(f"[!] Google Drive yetkilendirme uyarisi: {err}")
+            print("[*] HIC SORUN DEGIL! Sistem durdurulmuyor; Colab'in kendi yuksek hizli SSD diski (/content/AI/TriageCore) devreye alindi.")
+            drive_mounted = False
+
+# Calisma dizinini belirle
+if drive_mounted:
+    DRIVE_BASE_DIR = Path("/content/drive/MyDrive/AI/TriageCore")
+elif is_colab:
+    DRIVE_BASE_DIR = Path("/content/AI/TriageCore")
+else:
     DRIVE_BASE_DIR = Path("./AI/TriageCore")
-    print(f"[!] Colab disi ortam algilandi. Yerel dizin kullaniliyor: {DRIVE_BASE_DIR.resolve()}")
 
 # Egitim checkpointlerinin kaydedilecegi alt klasor yolu
 CHECKPOINT_DIR = DRIVE_BASE_DIR / "checkpoints"
@@ -46,15 +61,20 @@ LOGS_DIR = DRIVE_BASE_DIR / "logs"
 for folder in [CHECKPOINT_DIR, ADAPTER_DIR, LOGS_DIR]:
     folder.mkdir(parents=True, exist_ok=True)
 
-# Drive'da daha onceden egitilmis bir model olup olmadigini kontrol eder
+print("=" * 75)
+print(f"[+] PROJE CALISMA VE MODEL DIZINI HAZIR: {DRIVE_BASE_DIR.resolve()}")
+if drive_mounted:
+    print("[*] Modeller ve loglar kalici olarak Google Drive'a kaydedilecek.")
+else:
+    print("[*] Modeller yuksek hizli Colab SSD'sine kaydedilecek (Egitim daha hizli calisir).")
+print("=" * 75)
+
+# Daha onceden egitilmis bir model olup olmadigini kontrol eder
 adapter_config_file = ADAPTER_DIR / "adapter_config.json"
 if adapter_config_file.exists():
-    print("======================================================================")
-    print("[+] MUJDE: Google Drive 'AI/TriageCore/lora_adapter' icinde egitilmis model bulundu!")
-    print("[*] Isterseniz egitim adimlarini atlayip dogrudan SON HUCREDEKI Ngrok Sunucusunu calistirabilirsiniz.")
-    print("======================================================================")
+    print("[+] Bilgi: Bu dizinde egitilmis LoRA modeli bulundu. Dogrudan 7. Adima gecebilirsiniz.")
 else:
-    print("[*] Drive klasor yapisi hazir. Yeni egitim agirliklari bu dizine kaydedilecek.")
+    print("[*] Yeni egitim agirliklari bu dizine yazilacak.")
 """
 
 with open(NOTEBOOK_PATH, "r", encoding="utf-8") as f:
