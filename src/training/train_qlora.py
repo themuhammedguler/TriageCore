@@ -228,37 +228,76 @@ def train():
     # JSONL dosyalari HuggingFace Dataset nesnesine donusturuluyor
     dataset = load_dataset("json", data_files=data_files)
 
-    # 5. ADIM: Egitim Hiperparametrelerini (TrainingArguments) Tanimlama
-    training_args = TrainingArguments(
-        output_dir=args.output_dir,
-        num_train_epochs=args.epochs,
-        per_device_train_batch_size=args.batch_size,
-        gradient_accumulation_steps=args.grad_accum_steps,
-        optim="paged_adamw_8bit",
-        learning_rate=args.learning_rate,
-        lr_scheduler_type="cosine",
-        warmup_ratio=0.05,
-        logging_steps=10,
-        save_strategy="steps",
-        save_steps=50,
-        eval_strategy="steps",
-        eval_steps=50,
-        fp16=True,
-        max_grad_norm=0.3,
-        report_to="none",
-    )
+    # 5. ADIM: Egitim Hiperparametrelerini (TrainingArguments veya SFTConfig) Tanimlama
+    # trl>=0.12 ile gelen SFTConfig veya transformers TrainingArguments dinamik secilir
+    import inspect
+    try:
+        from trl import SFTConfig
+        TargetConfig = SFTConfig
+    except ImportError:
+        TargetConfig = TrainingArguments
+
+    # Hedef sinifin kabul ettigi parametre imzasini dinamik denetle
+    target_sig = inspect.signature(TargetConfig.__init__).parameters
+
+    # Egitim konfigurasyon sozluk yapisi olusturulur
+    config_kwargs = {
+        "output_dir": args.output_dir,  # Cikti klasoru
+        "num_train_epochs": args.epochs,  # Toplam epoch sayisi
+        "per_device_train_batch_size": args.batch_size,  # Cihaz basina ornek sayisi
+        "gradient_accumulation_steps": args.grad_accum_steps,  # Gradyan biriktirme adimi
+        "optim": "paged_adamw_8bit",  # 8-bit Paged AdamW optimizasyonu
+        "learning_rate": args.learning_rate,  # Ogrenme orani
+        "lr_scheduler_type": "cosine",  # Cosine ogrenme orani zamanlayicisi
+        "warmup_steps": 10,  # warmup_ratio yerine tum surumlerde gecerli evrensel warmup_steps
+        "logging_steps": 10,  # Her 10 adimda bir log basimi
+        "save_strategy": "steps",  # Adim bazli kaydetme stratejisi
+        "save_steps": 50,  # Her 50 adimda bir kaydet
+        "fp16": True,  # float16 hassasiyeti aktif
+        "max_grad_norm": 0.3,  # Gradyan kirpma esigi
+        "report_to": "none",  # W&B / TensorBoard telemetrisini kapali tut
+    }
+
+    # eval_strategy (yeni transformers) veya evaluation_strategy (eski transformers) uyumu
+    if "eval_strategy" in target_sig:
+        config_kwargs["eval_strategy"] = "steps"
+        config_kwargs["eval_steps"] = 50
+    elif "evaluation_strategy" in target_sig:
+        config_kwargs["evaluation_strategy"] = "steps"
+        config_kwargs["eval_steps"] = 50
+
+    # SFTConfig kullaniliyorsa max_seq_length dogrudan konfigurasyona verilir
+    if "max_seq_length" in target_sig:
+        config_kwargs["max_seq_length"] = args.max_seq_length
+
+    # Egitim argumanlari nesnesi ilklendirilir
+    training_args = TargetConfig(**config_kwargs)
 
     # 6. ADIM: SFTTrainer (Supervised Fine-Tuning Trainer) Ilklendirme
     print("[*] SFTTrainer hazirlaniyor...")
-    trainer = SFTTrainer(
-        model=model,
-        train_dataset=dataset["train"],
-        eval_dataset=dataset["validation"],
-        peft_config=lora_config,
-        max_seq_length=args.max_seq_length,
-        tokenizer=tokenizer,
-        args=training_args,
-    )
+    sft_sig = inspect.signature(SFTTrainer.__init__).parameters
+
+    # SFTTrainer arguman sozluk yapisi
+    trainer_kwargs = {
+        "model": model,  # Egitilecek model nesnesi
+        "train_dataset": dataset["train"],  # Egitim veri seti
+        "eval_dataset": dataset["validation"],  # Dogrulama veri seti
+        "peft_config": None if hasattr(model, "peft_config") else lora_config,  # Cift sarmalama uyarisi onlenir
+        "args": training_args,  # Egitim konfigurasyonu
+    }
+
+    # Eger max_seq_length SFTConfig'e verilemediyse ve SFTTrainer parametrelerinde varsa eklenir
+    if "max_seq_length" not in config_kwargs and "max_seq_length" in sft_sig:
+        trainer_kwargs["max_seq_length"] = args.max_seq_length
+
+    # Tokenizer parametresi dinamik eslenir
+    if "tokenizer" in sft_sig:
+        trainer_kwargs["tokenizer"] = tokenizer
+    elif "processing_class" in sft_sig:
+        trainer_kwargs["processing_class"] = tokenizer
+
+    # SFTTrainer nesnesi dinamik argumanlarla baslatilir
+    trainer = SFTTrainer(**trainer_kwargs)
 
     # 7. ADIM: Egitim Dongusunu Baslatma
     print("[*] Model egitimi baslatiliyor! Bu islem veri boyutuna gore zaman alacaktir...")
