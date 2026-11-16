@@ -16,6 +16,9 @@
 # JSON serilestirme islemleri icin json modulu yuklenir
 import json
 
+# Gunlukleme (logging) islemleri icin logging modulu yuklenir
+import logging
+
 # Rastgele vaka secimi icin random modulu yuklenir
 import random
 
@@ -30,6 +33,9 @@ from pathlib import Path
 
 # Tip ipuclari icin Any, Dict, List, Optional ve Tuple yuklenir
 from typing import Any, Dict, List, Optional, Tuple
+
+# Arayuz gunluk kayitcisi (logger) olusturulur
+logger = logging.getLogger("triagecore.ui")
 
 # Proje kok dizinini Python modul arama yoluna (sys.path) ekler
 project_root = Path(__file__).resolve().parent.parent.parent
@@ -605,7 +611,8 @@ def call_chat_endpoint(
         payload["messages"] = [{"role": "system", "content": sys_prompt}] + messages
 
     try:
-        resp = requests.post(f"{clean_url}/v1/chat", json=payload, timeout=25)
+        # Colab GPU uzerinde Llama-3 uretimi cok turlu sohbette 20-35sn surebilecegi icin timeout 75sn yapildi
+        resp = requests.post(f"{clean_url}/v1/chat", json=payload, timeout=75)
         if resp.status_code == 200:
             data = resp.json()
             # Eger uzak Colab sunucusundan geliyorsa yerel denetim dosyasina da kaydet
@@ -621,8 +628,8 @@ def call_chat_endpoint(
                     inference_time_ms=data.get("inference_time_ms", 0.0),
                 )
             return data
-    except Exception:
-        pass
+    except Exception as err:
+        logger.warning("Uzak AI sunucusuna baglanilamadi (%s), yerel klinik guvenlik motoru devreye girdi.", err)
 
     # Uzak sunucuya erisilemezse kesintisiz klinik deneyim icin yerel motor devreye girer
     last_msg = messages[-1]["content"] if messages else ""
@@ -869,14 +876,29 @@ def render_triage_module(api_url: str, temperature: float):
         active_query = preset_prompt or user_input
 
         if active_query:
+            # 1. Kullanicinin mesajini hemen ekrana bas ve durum gecmisine ekle
             st.session_state.triage_messages.append({"role": "user", "content": active_query})
-            res = call_chat_endpoint(
-                api_url=api_url,
-                session_id=st.session_state.triage_session_id,
-                mode="triage",
-                messages=st.session_state.triage_messages,
-                temperature=temperature,
+            st.markdown(
+                f"""
+                <div class="msg-doctor">
+                    <div class="msg-header"><span>👨‍⚕️</span> Hekim / Semptom Bildirimi</div>
+                    {active_query}
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
+
+            # 2. Cevap beklenirken kullaniciya net yukleniyor gostergesi sun
+            with st.spinner("🧠 AI Klinik Karar Destek Motoru semptomları analiz ediyor, yanıt bekleniyor..."):
+                res = call_chat_endpoint(
+                    api_url=api_url,
+                    session_id=st.session_state.triage_session_id,
+                    mode="triage",
+                    messages=st.session_state.triage_messages,
+                    temperature=temperature,
+                )
+
+            # 3. Model yanitini oturuma kaydet ve tam kartlar ile sayfayi tazele
             st.session_state.triage_messages.append({"role": "assistant", "content": res["reply"]})
             st.session_state.last_triage_meta = res
             st.rerun()
@@ -1018,15 +1040,30 @@ def render_simulation_module(api_url: str, temperature: float):
         final_question = quick_action or doctor_input
 
         if final_question:
+            # 1. Hekimin sorusunu hemen ekrana bas ve durum gecmisine ekle
             st.session_state.sim_messages.append({"role": "user", "content": final_question})
-            res = call_chat_endpoint(
-                api_url=api_url,
-                session_id=st.session_state.sim_session_id,
-                mode="simulation",
-                messages=st.session_state.sim_messages,
-                case_id=st.session_state.active_case_id,
-                temperature=temperature,
+            st.markdown(
+                f"""
+                <div class="msg-doctor">
+                    <div class="msg-header"><span>👨‍⚕️</span> Hekim (Siz)</div>
+                    {final_question}
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
+
+            # 2. Hasta yaniti beklenirken yukleniyor gostergesi sun
+            with st.spinner(f"👤 Hasta ({current_case['patient_name']}) yanıt veriyor, lütfen bekleyin..."):
+                res = call_chat_endpoint(
+                    api_url=api_url,
+                    session_id=st.session_state.sim_session_id,
+                    mode="simulation",
+                    messages=st.session_state.sim_messages,
+                    case_id=st.session_state.active_case_id,
+                    temperature=temperature,
+                )
+
+            # 3. Yaniti oturuma ekle ve sayfayi tazele
             st.session_state.sim_messages.append({"role": "assistant", "content": res["reply"]})
             st.rerun()
 
