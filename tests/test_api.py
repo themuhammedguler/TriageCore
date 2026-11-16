@@ -132,3 +132,84 @@ def test_triage_streaming_sse_endpoint(client):
     assert "data:" in response.text
     # Akis sonunda final bildiriminin geldigi dogrulanir
     assert '"is_final": true' in response.text
+
+
+
+def test_multi_turn_triage_chat(client):
+    """Ust uste sorulan takip sorularinin (multi-turn) baglami koruyarak yanitlandigini test eder."""
+    # Ilk mesajda karin agrisi, ikinci mesajda hangi tahlillerin istenecegi sorulur
+    payload = {
+        "session_id": "test-multi-turn-01",
+        "mode": "triage",
+        "messages": [
+            {"role": "user", "content": "Siddetli karin agrim var, sag alt tarafa vuruyor."},
+            {"role": "assistant", "content": "Acil degerlendirme gerekir."},
+            {"role": "user", "content": "Hangi kan tahlilleri yapilmali?"},
+        ],
+    }
+    # /v1/chat endpointine POST istegi atilir
+    response = client.post("/v1/chat", json=payload)
+    # HTTP 200 durumu dogrulanir
+    assert response.status_code == 200
+    data = response.json()
+    # Aciliyet skorunun 2 (ESI-2) oldugu dogrulanir
+    assert data["urgency_score"] == 2
+    # Takip sorusuna yanit olarak tetkik onerisi eklendigi dogrulanir
+    assert "Hemogram" in data["reply"] or "Tetkikler" in data["reply"]
+
+
+def test_doctor_simulation_cases_and_patient_reply(client):
+    """Doktor simulasyonu vaka listesini ve hasta yanit motorunu test eder."""
+    # 1. Vaka listesi cekilir
+    cases_resp = client.get("/v1/cases")
+    assert cases_resp.status_code == 200
+    cases = cases_resp.json()["cases"]
+    # En az 5 klinik vakanin hazir oldugu dogrulanir
+    assert len(cases) >= 5
+    # Gizli teshisin (correct_diagnosis) kullaniciya sizdirilmadigi dogrulanir
+    assert "correct_diagnosis" not in cases[0]
+
+    # 2. CASE-001 (Apandisit) hastasina fizik muayene sorusu yoneltilir
+    sim_payload = {
+        "session_id": "test-sim-01",
+        "mode": "simulation",
+        "case_id": "CASE-001",
+        "messages": [
+            {"role": "user", "content": "Hastanin batin fizik muayenesini yap ve vital bulgulara bak."},
+        ],
+    }
+    sim_resp = client.post("/v1/chat", json=sim_payload)
+    assert sim_resp.status_code == 200
+    sim_data = sim_resp.json()
+    # Muayene bulgularinda McBurney ve Rebound ibarelerinin yer aldigi dogrulanir
+    assert "McBurney" in sim_data["reply"]
+
+
+def test_doctor_diagnosis_evaluation(client):
+    """Doktorun koydugu teshisin ve ESI kararinin dogru puanlandigini test eder."""
+    # CASE-001 icin dogru teshis (Akut Apandisit) ve dogru ESI (2) gonderilir
+    eval_payload = {
+        "session_id": "test-sim-01",
+        "case_id": "CASE-001",
+        "submitted_diagnosis": "Akut Apandisit",
+        "submitted_esi": 2,
+        "question_count": 4,
+    }
+    resp = client.post("/v1/cases/evaluate", json=eval_payload)
+    assert resp.status_code == 200
+    data = resp.json()
+    # Teshisin dogru kabul edildigi ve tam puan (100) aldigi dogrulanir
+    assert data["is_correct"] is True
+    assert data["score"] == 100
+    assert "Alvarado" in data["clinical_pearls"]
+
+
+def test_audit_logs_endpoint(client):
+    """Yapilan konusmalarin log dosyasina kaydedildigini ve /v1/logs ile okundugunu test eder."""
+    # Log listesi sorgulanir
+    resp = client.get("/v1/logs?limit=10")
+    assert resp.status_code == 200
+    data = resp.json()
+    # Onceki testlerde yapilan konusmalarin loglandigi dogrulanir
+    assert data["count"] > 0
+    assert len(data["logs"]) > 0

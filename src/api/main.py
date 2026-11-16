@@ -1,15 +1,18 @@
 # ==============================================================================
-# TriageCore - Faz 4: FastAPI Uretim Seviyesi Web Servisi
+# TriageCore - Faz 4 & 6: FastAPI Uretim Seviyesi Web Servisi
 # ==============================================================================
 # Bu modul, istemcilerden gelen HTTP isteklerini karsilayan, CORS politikalarini
-# yoneten, saglik denetimi yapan ve hem senkron hem de Server-Sent Events (SSE)
-# streaming endpointlerini sunan ana FastAPI uygulamasidir.
+# yoneten, saglik denetimi yapan, cok turlu sohbet, Doktor-Hasta vaka simulasyonu
+# ve denetim loglari endpointlerini sunan ana FastAPI uygulamasidir.
 # ==============================================================================
 
 # Asenkron yasam dongusu (lifespan) yonetimi icin contextmanager yuklenir
 from contextlib import asynccontextmanager
 
-# FastAPI uygulama sinifi ve streaming yanit nesnesi yuklenir
+# Opsiyonel sorgu parametreleri icin Optional yuklenir
+from typing import Optional
+
+# FastAPI uygulama sinifi ve HTTP hata bilesenleri yuklenir
 from fastapi import FastAPI, HTTPException, status
 
 # FastAPI CORS (Cross-Origin Resource Sharing) guvenlik katmani yuklenir
@@ -18,14 +21,24 @@ from fastapi.middleware.cors import CORSMiddleware
 # SSE streaming destegi icin StreamingResponse yuklenir
 from fastapi.responses import StreamingResponse
 
+# Doktor simulasyonu vaka ve degerlendirme fonksiyonlari ice aktarilir
+from src.api.cases import evaluate_doctor_submission, list_public_cases
+
 # Konfigurasyon ayarlari ice aktarilir
 from src.api.config import settings
 
 # Cikarim motoru tekil nesnesi ice aktarilir
 from src.api.engine import engine
 
+# Denetim loglayici nesnesi ice aktarilir
+from src.api.logger import audit_logger
+
 # Istek ve yanit Pydantic semalari ice aktarilir
 from src.api.schemas import (
+    CaseEvaluationRequest,
+    CaseEvaluationResponse,
+    ChatSessionRequest,
+    ChatSessionResponse,
     HealthResponse,
     TriageRequest,
     TriageResponse,
@@ -48,11 +61,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,  # Uygulama basligi
     version=settings.app_version,  # Uygulama versiyonu
-    description="Acik agirlikli LLM tabanli, ESI uyumlu Tibbi Triyaj ve Karar Destek API'si.",
+    description="Acik agirlikli LLM tabanli, ESI uyumlu Tibbi Triyaj, Cok Turlu Konsultasyon ve Doktor Vaka Simulatoru API'si.",
     lifespan=lifespan,  # Yasam dongusu yoneticisi
 )
 
-# Tum istemcilere (Web/Mobil/Frontend) izin veren CORS ayarlari eklenir
+# Tum istemcilere (Web/Mobil/Streamlit) izin veren CORS ayarlari eklenir
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Herhangi bir kaynaktan gelen isteklere izin ver
@@ -102,6 +115,67 @@ async def evaluate_triage(request: TriageRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Triyaj cikarimi sirasinda hata olustu: {str(exc)}",
         )
+
+
+@app.post("/v1/chat", response_model=ChatSessionResponse, tags=["Multi-Turn & Simulation"])
+async def multi_turn_chat(request: ChatSessionRequest):
+    """Ust uste sorulan takip sorularini (triage) veya Doktor-Hasta vaka diyalogunu (simulation) yanitlar."""
+    try:
+        # Cok turlu diyalog motoru cagirilir
+        response = await engine.predict_chat_session(request)
+        return response
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Diyalog cikarimi sirasinda hata olustu: {str(exc)}",
+        )
+
+
+@app.get("/v1/cases", tags=["Simulation"])
+async def get_simulation_cases():
+    """Doktor simulasyonu modu icin mevcut hasta vakalarini (gizli tanilari gizleyerek) listeler."""
+    # Vaka listesi dondurulur
+    return {"cases": list_public_cases()}
+
+
+@app.post("/v1/cases/evaluate", response_model=CaseEvaluationResponse, tags=["Simulation"])
+async def evaluate_case_diagnosis(request: CaseEvaluationRequest):
+    """Doktor rolundeki kullanicinin vaka sonunda koydugu teshisi ve ESI kararini degerlendirir."""
+    try:
+        # Degerlendirme motoru calistirilir
+        result = evaluate_doctor_submission(
+            case_id=request.case_id,
+            submitted_diagnosis=request.submitted_diagnosis,
+            submitted_esi=request.submitted_esi,
+            question_count=request.question_count,
+        )
+        # Degerlendirme sonucunu denetim loglarina kaydet
+        audit_logger.log_interaction(
+            session_id=request.session_id,
+            mode="case_evaluation",
+            case_id=request.case_id,
+            user_message=f"Tanı: {request.submitted_diagnosis} | Seçilen ESI: {request.submitted_esi}",
+            assistant_reply=f"Skor: {result['score']}/100 | Doğru Tanı: {result['correct_diagnosis']} | {result['feedback']}",
+            urgency_score=result["expected_esi"],
+        )
+        return CaseEvaluationResponse(**result)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+
+
+@app.get("/v1/logs", tags=["Audit & Logging"])
+async def get_audit_logs(
+    limit: int = 100,
+    mode: Optional[str] = None,
+    session_id: Optional[str] = None,
+):
+    """Kaydedilen tum sohbet ve vaka cozum loglarini filtreleyerek dondurur."""
+    # Log kayitlari okunur
+    logs = audit_logger.get_logs(limit=limit, mode=mode, session_id=session_id)
+    return {"count": len(logs), "logs": logs}
 
 
 @app.post("/v1/triage/stream", tags=["Triage"])

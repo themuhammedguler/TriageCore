@@ -160,3 +160,44 @@
 * **Karar:** Tek komutla (`python scripts/run_ci_local.py`) uzak CI ortamını birebir simüle eden yerel bir otomasyon scripti yazıldı.
 * **Mühendislik Gerekçesi:**
   1. Geliştirici daha commit ve push yapmadan önce yerel makinesinde tüm linter ve testlerin %100 geçtiğini görür.
+
+
+---
+
+### [ADR-016] Google Drive `/MyDrive/AI/TriageCore` Kalıcı Yedekleme ve Otomatik Checkpoint Kurtarma
+* **Durum:** Kabul Edildi (Faz 6 / v2)
+* **Bağlam:** Google Colab geçici sanal makineler (ephemeral VM) üzerinde çalışır. Oturum kapandığında yerel `/content` diski tamamen silinir ve saatler süren eğitim ağırlıkları kaybolabilir.
+* **Karar:** Notebook'un **ilk hücresi** doğrudan Google Drive'ı bağlayacak (`drive.mount`) ve tüm ara checkpoint'leri (`/MyDrive/AI/TriageCore/checkpoints`), final LoRA adaptörünü (`/MyDrive/AI/TriageCore/lora_adapter`) ve logları (`/MyDrive/AI/TriageCore/logs`) kalıcı olarak Google Drive'a yazacak şekilde tasarlandı.
+* **Mühendislik Gerekçesi:**
+  1. **Sıfır Veri Kaybı:** Bağlantı kopsa bile `resume_from_checkpoint=True` sayesinde eğitim Drive'daki son adımdan devam eder.
+  2. **Tekrar Eğitimsiz Başlatma:** Model bir kez eğitildikten sonra, sonraki günlerde Colab açıldığında eğitim adımları tamamen atlanıp doğrudan son hücredeki sunucu çalıştırılabilir.
+
+---
+
+### [ADR-017] Çift Katmanlı Colab Keep-Alive (DOM Ping + Drive Heartbeat Thread)
+* **Durum:** Kabul Edildi (Faz 6 / v2)
+* **Bağlam:** Colab, tarayıcı sekmesi arka planda kaldığında veya disk/runtime aktivitesi durduğunda oturumu "idle timeout" nedeniyle sonlandırır.
+* **Karar:** İki katmanlı koruma devreye alındı:
+  1. Tarayıcı DOM katmanında her 60 saniyede bir bağlantı kontrolü yapan `IPython.display.Javascript` zamanlayıcısı.
+  2. Python arka planında (`daemon=True` thread) her 2 dakikada bir Google Drive'a zaman damgası yazan heartbeat işçisi.
+* **Mühendislik Gerekçesi:**
+  1. Hem tarayıcı WebSocket bağlantısı hem de sanal makine dosya sistemi aktif tutularak oturumun kullanıcı kapatana kadar uyanık kalması sağlanır.
+
+---
+
+### [ADR-018] Sıfır Yerel Yük İçin Colab Ngrok / Cloudflared Uzak GPU Sunucusu
+* **Durum:** Kabul Edildi (Faz 6 / v2)
+* **Bağlam:** 8 milyar parametreli bir LLM'i yerel bilgisayarda çalıştırmak yüksek RAM/VRAM tüketir ve bilgisayarı yavaşlatır.
+* **Karar:** Modeli yerel bilgisayara indirmek yerine, Colab'in son hücresinde FastAPI + Uvicorn sunucusu başlatılıp `pyngrok` (veya token gerektirmeyen `cloudflared` tüneli) ile dış dünyaya güvenli bir HTTPS endpoint açılması sağlandı.
+* **Mühendislik Gerekçesi:**
+  1. Yerel bilgisayarda sadece hafif Streamlit arayüzü çalışır (%0 GPU yükü); tüm ağır matris çarpımları Colab'deki A100/L4/T4 GPU üzerinde gerçekleşir.
+
+---
+
+### [ADR-019] "Zero-AI Look" Kurumsal Klinik Konsol, Doktor Vaka Simülatörü (OSCE) ve Denetim Logları
+* **Durum:** Kabul Edildi (Faz 6 / v2)
+* **Bağlam:** Standart sohbet arayüzleri oyuncak/yapay durmakta ve gerçek bir klinik eğitim/karar destek deneyimi sunmamaktadır.
+* **Karar:**
+  1. Robot ikonları ve yapay zeka klişeleri kaldırılarak Hastane Bilgi Yönetim Sistemi (HBYS / CDSS) tasarım dilinde **Streamlit Klinik Konsolu** (`src/ui/app.py`) inşa edildi.
+  2. **Çift Yönlü Etkileşim:** Hem üst üste soru sorulabilen **Çok Turlu Triyaj**, hem de kullanıcının **Hekim** olup hastayı sorguladığı, fizik muayene/tetkik istediği ve teşhis koyduğu **OSCE Vaka Simülatörü** (`src/api/cases.py`) eklendi.
+  3. **Denetim İzleri (`AuditLogger`):** Sorulan her soru ve verilen her cevap zaman damgalı olarak `logs/clinical_sessions.jsonl` dosyasına kaydedilerek tam denetlenebilirlik sağlandı.

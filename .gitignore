@@ -33,6 +33,7 @@ checkpoints/
 .env
 .env.local
 *.log
+logs/
 wandb/
 
 # IDE
