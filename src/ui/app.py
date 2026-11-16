@@ -58,87 +58,191 @@ def configure_page():
         initial_sidebar_state="expanded",
     )
 
-    # Kurumsal hastane yazilimi gorunumu saglayan ozel CSS kurallari
+    # Kurumsal hastane yazilimi gorunumu saglayan ozel Dark Mode CSS kurallari
     clinical_css = """
     <style>
-        /* Genel arka plan ve tipografi */
+        /* Genel arka plan ve tipografi - Kurumsal Dark Palette */
         .stApp {
-            background-color: #F8FAFC;
-            color: #0F172A;
+            background-color: #0B0F19;
+            color: #F8FAFC;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+
+        /* Sidebar Koyu Zemin */
+        section[data-testid="stSidebar"] {
+            background-color: #0F172A;
+            border-right: 1px solid #1E293B;
+        }
+
         /* Ust baslik cubugu */
         .clinical-header {
-            background-color: #0F172A;
+            background-color: #111827;
             color: #F8FAFC;
-            padding: 16px 24px;
-            border-radius: 6px;
-            border-left: 5px solid #0284C7;
-            margin-bottom: 20px;
+            padding: 18px 26px;
+            border-radius: 8px;
+            border: 1px solid #1E293B;
+            border-left: 5px solid #0EA5E9;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
         .clinical-header h2 {
             margin: 0;
-            font-size: 1.35rem;
-            font-weight: 600;
+            font-size: 1.4rem;
+            font-weight: 700;
             letter-spacing: -0.01em;
-            color: #FFFFFF;
+            color: #F8FAFC;
         }
         .clinical-header p {
-            margin: 4px 0 0 0;
-            font-size: 0.85rem;
+            margin: 6px 0 0 0;
+            font-size: 0.88rem;
             color: #94A3B8;
         }
-        /* Klinik bilgi kartlari */
+
+        /* Klinik bilgi kartlari - Koyu Mod */
         .clinical-card {
-            background-color: #FFFFFF;
-            border: 1px solid #CBD5E1;
-            border-radius: 6px;
-            padding: 16px;
-            margin-bottom: 14px;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            background-color: #131D31;
+            border: 1px solid #1E293B;
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 16px;
+            color: #E2E8F0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
         .clinical-card h4 {
             margin-top: 0;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 0.95rem;
-            color: #1E293B;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            border-bottom: 1px solid #E2E8F0;
-            padding-bottom: 6px;
-        }
-        /* Mesaj kutulari (AI gorunumunden uzak, klinik kayit satirlari) */
-        .msg-doctor {
-            background-color: #F1F5F9;
-            border-left: 4px solid #334155;
-            padding: 12px 16px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            font-size: 0.94rem;
-        }
-        .msg-system {
-            background-color: #FFFFFF;
-            border: 1px solid #CBD5E1;
-            border-left: 4px solid #0284C7;
-            padding: 12px 16px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            font-size: 0.94rem;
-        }
-        .msg-label {
-            font-size: 0.75rem;
+            color: #38BDF8;
             font-weight: 700;
             text-transform: uppercase;
-            color: #475569;
-            margin-bottom: 4px;
             letter-spacing: 0.04em;
+            border-bottom: 1px solid #1E293B;
+            padding-bottom: 8px;
         }
-        /* ESI Aciliyet Rozetleri */
-        .esi-badge-1 { background:#DC2626; color:#FFF; padding:8px 12px; border-radius:4px; font-weight:700; font-size:0.9rem; }
-        .esi-badge-2 { background:#EA580C; color:#FFF; padding:8px 12px; border-radius:4px; font-weight:700; font-size:0.9rem; }
-        .esi-badge-3 { background:#D97706; color:#FFF; padding:8px 12px; border-radius:4px; font-weight:700; font-size:0.9rem; }
-        .esi-badge-4 { background:#2563EB; color:#FFF; padding:8px 12px; border-radius:4px; font-weight:700; font-size:0.9rem; }
-        .esi-badge-5 { background:#16A34A; color:#FFF; padding:8px 12px; border-radius:4px; font-weight:700; font-size:0.9rem; }
+
+        /* Sol Sidebar Baglanti Durumu Kartı */
+        .clinical-status-box {
+            background-color: #162238;
+            border: 1px solid #1E293B;
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 0.84rem;
+            color: #E2E8F0;
+            margin-top: 8px;
+        }
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .status-row:last-child {
+            margin-bottom: 0;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #10B981;
+            border-radius: 50%;
+            margin-right: 6px;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        }
+        .status-val {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            color: #38BDF8;
+            font-weight: 600;
+        }
+        .status-online {
+            color: #34D399;
+            font-weight: 700;
+        }
+
+        /* Mesaj kutulari - Kurumsal Hekim ve Hasta Renkleri */
+        .msg-doctor {
+            background-color: #1E293B;
+            border: 1px solid #334155;
+            border-left: 4px solid #38BDF8;
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            color: #F8FAFC;
+        }
+        .msg-system {
+            background-color: #0F172A;
+            border: 1px solid #1E293B;
+            border-left: 4px solid #10B981;
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            color: #F1F5F9;
+        }
+        .msg-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #38BDF8;
+            margin-bottom: 6px;
+            letter-spacing: 0.05em;
+        }
+        .msg-system .msg-label {
+            color: #34D399;
+        }
+
+        /* ESI Aciliyet Rozetleri - Yuksek Kontrastli Koyu Tonlar */
+        .esi-badge-1 {
+            background: linear-gradient(135deg, #DC2626, #991B1B);
+            color: #FFFFFF;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            box-shadow: 0 0 14px rgba(220, 38, 38, 0.35);
+        }
+        .esi-badge-2 {
+            background: linear-gradient(135deg, #EA580C, #C2410C);
+            color: #FFFFFF;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            box-shadow: 0 0 14px rgba(234, 88, 12, 0.35);
+        }
+        .esi-badge-3 {
+            background: linear-gradient(135deg, #D97706, #B45309);
+            color: #FFFFFF;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+        .esi-badge-4 {
+            background: linear-gradient(135deg, #2563EB, #1D4ED8);
+            color: #FFFFFF;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+        .esi-badge-5 {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: #FFFFFF;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+
+        /* Streamlit Metrik ve Expander Kartlari */
+        div[data-testid="stMetricValue"] {
+            color: #38BDF8 !important;
+            font-weight: 700;
+        }
+        div[data-testid="stMetricLabel"] {
+            color: #94A3B8 !important;
+        }
     </style>
     """
     # CSS kurallarini sayfaya gom
@@ -319,10 +423,19 @@ def render_sidebar() -> Tuple[str, str, float]:
         device_label = health_info.get("device", "cpu")
         st.markdown(
             f"""
-            <div class="clinical-card" style="padding:10px; font-size:0.82rem;">
-                <b>Bağlantı Durumu:</b> Aktif<br>
-                <b>Çıkarım Motoru:</b> {engine_label}<br>
-                <b>Donanım:</b> {device_label}
+            <div class="clinical-status-box">
+                <div class="status-row">
+                    <span><span class="status-dot"></span><b>Bağlantı Durumu</b></span>
+                    <span class="status-online">Aktif</span>
+                </div>
+                <div class="status-row">
+                    <span style="color:#94A3B8;">Çıkarım Motoru:</span>
+                    <span class="status-val">{engine_label}</span>
+                </div>
+                <div class="status-row">
+                    <span style="color:#94A3B8;">Donanım:</span>
+                    <span class="status-val">{device_label}</span>
+                </div>
             </div>
             """,
             unsafe_allow_html=True,

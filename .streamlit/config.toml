@@ -1,0 +1,23 @@
+# ==============================================================================
+# TriageCore - Streamlit Kuresel Konfigurasyon ve Tema Ayarlari
+# ==============================================================================
+# Bu dosya, Streamlit'in varsayilan temasini kurumsal klinik Dark Mode'a kilitler;
+# boylece istemci isletim sistemi ne olursa olsun beyaz parlama veya kontrast
+# kaybi yasanmaz.
+# ==============================================================================
+
+[theme]
+base = "dark"
+primaryColor = "#0EA5E9"           # Klinik Camgöbeği (Medical Sky Cyan)
+backgroundColor = "#0B0F19"        # Derin Obsidiyen / Koyu Arka Plan
+secondaryBackgroundColor = "#0F172A" # Kenar Çubuğu ve Panel Koyu Zemin
+textColor = "#F8FAFC"              # Yüksek Kontrastlı Beyaz Metin
+font = "sans serif"
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false
