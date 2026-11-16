@@ -14,11 +14,12 @@ __pycache__/
 
 # Datasets and Large Files (Never commit raw/huge medical datasets to Git)
 data/raw/
-data/processed/
+data/processed/*
 *.jsonl
 *.parquet
 *.csv
 !data/sample_triage.jsonl
+!data/processed/golden_triage_turkish.jsonl
 
 # Model Weights and Checkpoints
 models/

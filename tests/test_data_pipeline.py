@@ -134,3 +134,54 @@ def test_format_and_save_jsonl(tmp_path: Path):
         line = f.readline()
         loaded = json.loads(line)
         assert len(loaded["messages"]) == 3
+
+
+def test_golden_triage_turkish_dataset():
+    """Verify that the standalone Golden Triage Turkish dataset exists, is valid JSONL,
+
+    contains at least 300 rich clinical cases across all 5 ESI levels, and follows ChatML format.
+    """
+    dataset_path = Path("data/processed/golden_triage_turkish.jsonl")
+    assert dataset_path.exists(), f"Golden triage dataset not found at {dataset_path}"
+
+    cases = []
+    esi_levels_found = set()
+
+    with open(dataset_path, "r", encoding="utf-8") as f:
+        for line_no, line in enumerate(f, 1):
+            line = line.strip()
+            if not line:
+                continue
+            data = json.loads(line)
+            assert "messages" in data, f"Line {line_no} missing 'messages' key"
+            messages = data["messages"]
+            assert len(messages) >= 3, f"Line {line_no} has fewer than 3 messages"
+
+            roles = [m["role"] for m in messages]
+            assert roles[0] == "system"
+            assert roles[1] == "user"
+            assert roles[2] == "assistant"
+
+            user_text = messages[1]["content"]
+            assistant_text = messages[2]["content"]
+            assert len(user_text) > 10, f"Line {line_no} user prompt too short"
+            assert len(assistant_text) > 50, f"Line {line_no} assistant prompt too short"
+
+            # Check for Turkish clinical structure indicators
+            assert any(tag in assistant_text for tag in ["Klinik", "ESI", "Aciliyet", "Protokol", "Eylem"]), (
+                f"Line {line_no} assistant response missing clinical structure"
+            )
+
+            # Check ESI level coverage from text or metadata
+            meta_level = data.get("metadata", {}).get("esi_level")
+            if meta_level:
+                esi_levels_found.add(meta_level)
+            for level in range(1, 6):
+                if f"ESI Seviye {level}" in assistant_text or f"ESI-{level}" in assistant_text or f"Seviye: {level}" in assistant_text:
+                    esi_levels_found.add(level)
+
+            cases.append(data)
+
+    assert len(cases) >= 300, f"Expected at least 300 golden cases, got {len(cases)}"
+    assert esi_levels_found == {1, 2, 3, 4, 5}, f"Missing some ESI levels in golden dataset: {esi_levels_found}"
+
