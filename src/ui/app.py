@@ -848,55 +848,60 @@ def render_triage_module(api_url: str, temperature: float):
         if q_col3.button("⚡ İdrarda Yanma & Sık İdrar", use_container_width=True):
             preset_prompt = "3 gündür idrar yaparken yanma ve sık idrara çıkma şikayeti var, ateş veya böğür ağrısı yok."
 
-        # Mesaj gecmisini kurumsal Hekim vs Sistem kartlari ile goster
-        for msg in st.session_state.triage_messages:
-            if msg["role"] == "user":
-                st.markdown(
-                    f"""
-                    <div class="msg-doctor">
-                        <div class="msg-header"><span>👨‍⚕️</span> Hekim / Semptom Bildirimi</div>
-                        {msg["content"]}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f"""
-                    <div class="msg-system">
-                        <div class="msg-header"><span>➕</span> TriageCore Klinik Değerlendirme</div>
-                        {msg["content"]}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+        # Mesaj gecmisi ve dinamik yanit alani (Kullanici yazma kutucugu daima en altta kalsin diye st.container kullanilir)
+        triage_chat_area = st.container()
 
-        # Alt kisimdaki cok turlu konsültasyon chat kutusu
+        with triage_chat_area:
+            # Mesaj gecmisini kurumsal Hekim vs Sistem kartlari ile goster
+            for msg in st.session_state.triage_messages:
+                if msg["role"] == "user":
+                    st.markdown(
+                        f"""
+                        <div class="msg-doctor">
+                            <div class="msg-header"><span>👨‍⚕️</span> Hekim / Semptom Bildirimi</div>
+                            {msg["content"]}
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"""
+                        <div class="msg-system">
+                            <div class="msg-header"><span>➕</span> TriageCore Klinik Değerlendirme</div>
+                            {msg["content"]}
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+        # Alt kisimdaki cok turlu konsültasyon chat kutusu (Daima mesajlarin ve yukleniyor alaninin en altinda yer alir)
         user_input = st.chat_input("Hasta şikayetini veya takip sorunuzu yazın (Örn: Hangi EKG ve kan tetkikleri istenmeli?)...")
         active_query = preset_prompt or user_input
 
         if active_query:
-            # 1. Kullanicinin mesajini hemen ekrana bas ve durum gecmisine ekle
+            # 1. Kullanicinin mesajini hemen ekrana bas ve durum gecmisine ekle (Yazma kutucugunun ustunde)
             st.session_state.triage_messages.append({"role": "user", "content": active_query})
-            st.markdown(
-                f"""
-                <div class="msg-doctor">
-                    <div class="msg-header"><span>👨‍⚕️</span> Hekim / Semptom Bildirimi</div>
-                    {active_query}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            # 2. Cevap beklenirken kullaniciya net yukleniyor gostergesi sun
-            with st.spinner("🧠 AI Klinik Karar Destek Motoru semptomları analiz ediyor, yanıt bekleniyor..."):
-                res = call_chat_endpoint(
-                    api_url=api_url,
-                    session_id=st.session_state.triage_session_id,
-                    mode="triage",
-                    messages=st.session_state.triage_messages,
-                    temperature=temperature,
+            with triage_chat_area:
+                st.markdown(
+                    f"""
+                    <div class="msg-doctor">
+                        <div class="msg-header"><span>👨‍⚕️</span> Hekim / Semptom Bildirimi</div>
+                        {active_query}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
+
+                # 2. Cevap beklenirken kullaniciya net yukleniyor gostergesi sun (Yazma kutucugunun ustunde)
+                with st.spinner("🧠 AI Klinik Karar Destek Motoru semptomları analiz ediyor, yanıt bekleniyor..."):
+                    res = call_chat_endpoint(
+                        api_url=api_url,
+                        session_id=st.session_state.triage_session_id,
+                        mode="triage",
+                        messages=st.session_state.triage_messages,
+                        temperature=temperature,
+                    )
 
             # 3. Model yanitini oturuma kaydet ve tam kartlar ile sayfayi tazele
             st.session_state.triage_messages.append({"role": "assistant", "content": res["reply"]})
@@ -1013,55 +1018,59 @@ def render_simulation_module(api_url: str, temperature: float):
         if b5.button("🧪 Lab & Tetkik", use_container_width=True):
             quick_action = "Tam kan sayımı, biyokimya ve ilgili radyolojik görüntüleme tetkiklerini iste."
 
-        # Hekim (Siz) vs Hasta Diyalog Akisi
-        for msg in st.session_state.sim_messages:
-            if msg["role"] == "user":
-                st.markdown(
-                    f"""
-                    <div class="msg-doctor">
-                        <div class="msg-header"><span>👨‍⚕️</span> Hekim (Siz)</div>
-                        {msg["content"]}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f"""
-                    <div class="msg-patient">
-                        <div class="msg-header"><span>👤</span> Hasta ({current_case['patient_name']}) / Klinik Bulgular</div>
-                        {msg["content"]}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+        # Hekim vs Hasta Diyalog Akisi alani (Yazma kutucugu daima en altta kalsin diye st.container kullanilir)
+        sim_chat_area = st.container()
+
+        with sim_chat_area:
+            for msg in st.session_state.sim_messages:
+                if msg["role"] == "user":
+                    st.markdown(
+                        f"""
+                        <div class="msg-doctor">
+                            <div class="msg-header"><span>👨‍⚕️</span> Hekim (Siz)</div>
+                            {msg["content"]}
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"""
+                        <div class="msg-patient">
+                            <div class="msg-header"><span>👤</span> Hasta ({current_case['patient_name']}) / Klinik Bulgular</div>
+                            {msg["content"]}
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
         doctor_input = st.chat_input("Hastaya sorunuzu yöneltin veya klinik tetkik isteyin...")
         final_question = quick_action or doctor_input
 
         if final_question:
-            # 1. Hekimin sorusunu hemen ekrana bas ve durum gecmisine ekle
+            # 1. Hekimin sorusunu durum gecmisine ekle ve yazma kutusunun ustundeki alana hemen bas
             st.session_state.sim_messages.append({"role": "user", "content": final_question})
-            st.markdown(
-                f"""
-                <div class="msg-doctor">
-                    <div class="msg-header"><span>👨‍⚕️</span> Hekim (Siz)</div>
-                    {final_question}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            # 2. Hasta yaniti beklenirken yukleniyor gostergesi sun
-            with st.spinner(f"👤 Hasta ({current_case['patient_name']}) yanıt veriyor, lütfen bekleyin..."):
-                res = call_chat_endpoint(
-                    api_url=api_url,
-                    session_id=st.session_state.sim_session_id,
-                    mode="simulation",
-                    messages=st.session_state.sim_messages,
-                    case_id=st.session_state.active_case_id,
-                    temperature=temperature,
+            with sim_chat_area:
+                st.markdown(
+                    f"""
+                    <div class="msg-doctor">
+                        <div class="msg-header"><span>👨‍⚕️</span> Hekim (Siz)</div>
+                        {final_question}
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
                 )
+
+                # 2. Hasta yaniti beklenirken yukleniyor gostergesi sun (Yazma kutusunun ustunde)
+                with st.spinner(f"👤 Hasta ({current_case['patient_name']}) yanıt veriyor, lütfen bekleyin..."):
+                    res = call_chat_endpoint(
+                        api_url=api_url,
+                        session_id=st.session_state.sim_session_id,
+                        mode="simulation",
+                        messages=st.session_state.sim_messages,
+                        case_id=st.session_state.active_case_id,
+                        temperature=temperature,
+                    )
 
             # 3. Yaniti oturuma ekle ve sayfayi tazele
             st.session_state.sim_messages.append({"role": "assistant", "content": res["reply"]})
