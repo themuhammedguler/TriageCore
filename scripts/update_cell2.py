@@ -60,7 +60,7 @@ else:
 with open(NOTEBOOK_PATH, "r", encoding="utf-8") as f:
     nb = json.load(f)
 
-nb["cells"][2]["source"] = [l + "\n" for l in new_cell2.splitlines()]
+nb["cells"][2]["source"] = [line + "\n" for line in new_cell2.splitlines()]
 
 with open(NOTEBOOK_PATH, "w", encoding="utf-8") as f:
     json.dump(nb, f, ensure_ascii=False, indent=1)
