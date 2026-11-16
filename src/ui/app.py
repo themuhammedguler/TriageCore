@@ -7,10 +7,10 @@
 #
 # Ozellikler:
 # 1. Linear & Modern Healthtech estetik standartlarinda Derin Obsidiyen Dark Mode
-# 2. Asla kirilmayan/kesilmeyen Sistem Telemetrisi ve Canli Ag Nabiz Indikatoru
-# 3. Sol Menude Buyuk, Parlayan (Noktasiz) Etkilesimli Klinik Navigasyon Kartlari
-# 4. Elektronik Hasta Dosyasi (EHR Banner) ve gercekci Hekim-Hasta diyalog baloncuklari
-# 5. Hizli anamnez/muayene istem haplari ve 100 uzerinden klinik teshis puanlama
+# 2. Genisletilmis sol sidebar (380px) ve tam metin gosteren telemetri karti
+# 3. Sade, orantili ve parlayan navigasyon kartlari (Klinik Triyaj, Doktor Simulatoru, Denetim)
+# 4. URL'de hash (#) ve baslik yanlarinda zincir baglanti ikonlari icermeyen temiz yapi
+# 5. Elektronik Hasta Dosyasi (EHR Banner) ve 100 uzerinden klinik teshis puanlama
 # ==============================================================================
 
 # JSON serilestirme islemleri icin json modulu yuklenir
@@ -77,7 +77,7 @@ def configure_page():
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
-        /* Streamlit basliklarinin sagindaki otomatik baglanti kopyalama (zincir) ikonlarini gizle */
+        /* Streamlit basliklarinin sagindaki otomatik baglanti kopyalama ikonlarini kesinlikle gizle */
         .stHeading a,
         a.anchorjs-link,
         button[data-testid="stHeaderAction"],
@@ -88,12 +88,20 @@ def configure_page():
             visibility: hidden !important;
             opacity: 0 !important;
             pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
 
-        /* Sidebar Koyu Zemin ve Kenarlik */
+        /* Sidebar Koyu Zemin, Genisletilmis Boyut (380px) ve Sag Kenarlik */
         section[data-testid="stSidebar"] {
             background-color: #0D1322;
             border-right: 1px solid #1E293B;
+            width: 380px !important;
+            min-width: 360px !important;
+        }
+        section[data-testid="stSidebar"] > div:first-child {
+            width: 380px !important;
+            min-width: 360px !important;
         }
 
         /* Sol Sidebar Marka Alani - Parlayan Logo ve Gradyan Metin */
@@ -130,19 +138,32 @@ def configure_page():
             text-transform: uppercase;
         }
 
-        /* Sidebar Buyuk Navigasyon Kartlari (Noktasiz, Buyuk, Parlayan) */
+        /* Sidebar Buyuk Navigasyon Kartlari (Sade, Orantili, Sol Hizali) */
         section[data-testid="stSidebar"] div.stButton > button {
             height: auto !important;
-            min-height: 62px !important;
-            padding: 12px 16px !important;
+            min-height: 50px !important;
+            padding: 12px 18px !important;
             text-align: left !important;
             border-radius: 10px !important;
-            white-space: pre-line !important;
-            line-height: 1.4 !important;
-            font-size: 0.94rem !important;
-            display: block !important;
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
             margin-bottom: 8px !important;
             transition: all 0.25s ease !important;
+            width: 100% !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button div[data-testid="stMarkdownContainer"] {
+            text-align: left !important;
+            justify-content: flex-start !important;
+            display: flex !important;
+            width: 100% !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button div[data-testid="stMarkdownContainer"] p {
+            margin: 0 !important;
+            text-align: left !important;
+            font-size: 0.96rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.01em !important;
         }
 
         /* Aktif Kart: Aydinlik Yanar, Canli Camgobegi Gradyan ve Neon Isilti */
@@ -150,8 +171,7 @@ def configure_page():
             background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%) !important;
             border: 1px solid #38BDF8 !important;
             color: #FFFFFF !important;
-            font-weight: 800 !important;
-            box-shadow: 0 0 18px rgba(14, 165, 233, 0.45) !important;
+            box-shadow: 0 0 16px rgba(14, 165, 233, 0.45) !important;
         }
 
         /* Pasif Kart: Sonuk, Koyu Arduvaz */
@@ -159,7 +179,6 @@ def configure_page():
             background: #111A2E !important;
             border: 1px solid #1E2E4A !important;
             color: #94A3B8 !important;
-            font-weight: 600 !important;
             box-shadow: none !important;
         }
         section[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover {
@@ -168,7 +187,7 @@ def configure_page():
             color: #F8FAFC !important;
         }
 
-        /* Ust Ana Marka & Baslik Cubugu */
+        /* Ust Ana Marka & Baslik Cubugu (h1 yerine div kullanarak URL hash olusumunu engeller) */
         .brand-header {
             background: linear-gradient(135deg, #0F172A 0%, #111D35 100%);
             border: 1px solid #1E2E4A;
@@ -181,9 +200,9 @@ def configure_page():
             justify-content: space-between;
             align-items: center;
         }
-        .brand-header-left h1 {
+        .brand-header-title {
             margin: 0;
-            font-size: 1.45rem;
+            font-size: 1.40rem;
             font-weight: 800;
             letter-spacing: -0.02em;
             color: #F8FAFC;
@@ -290,7 +309,7 @@ def configure_page():
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 8px;
         }
         .telemetry-row:last-child {
@@ -498,16 +517,23 @@ def configure_page():
             font-size: 0.80rem !important;
         }
     </style>
+
+    <script>
+        // Sayfa yuklendiginde URL'deki gereksiz hash (#...) kismini temizler
+        if (window.location.hash) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+    </script>
     """
-    # CSS stillerini sayfaya gom
+    # CSS ve JS kodlarini sayfaya gom
     st.markdown(clinical_css, unsafe_allow_html=True)
 
 
 def init_session_state():
     """Uygulama oturum degiskenlerini (session_state) ilk calismada hazirlar."""
-    # Varsayilan calisma modulu (Sol Menu Kart Secimi)
+    # Varsayilan calisma modulu (Sade Isimlendirme)
     if "current_module" not in st.session_state:
-        st.session_state.current_module = "🩺 Klinik Triyaj"
+        st.session_state.current_module = "Klinik Triyaj"
 
     # Triyaj modu oturum kimligi
     if "triage_session_id" not in st.session_state:
@@ -643,7 +669,7 @@ def call_chat_endpoint(
 
 
 def render_sidebar() -> Tuple[str, str, float]:
-    """Sol kontrol panelini (Parlayan kartlar, baglanti ayari ve sistem telemetrisini) cizer."""
+    """Sol kontrol panelini (Sade parlayan kartlar, AI baglantisi ve tam metin telemetriyi) cizer."""
     with st.sidebar:
         # 1. MARKA BASLIGI (GELISMIS TIPOGRAFI, PARLAYAN LOGO VE CDSS ROZETI)
         st.markdown(
@@ -659,24 +685,23 @@ def render_sidebar() -> Tuple[str, str, float]:
             unsafe_allow_html=True,
         )
 
-        # 2. BUYUK VE PARLAYAN KART NAVIGASYONU (NOKTALI ILKEL RADYO TAMAMEN KALDIRILDI)
+        # 2. SADE, ORANTILI VE BUYUK PARLAYAN KART NAVIGASYONU (Gereksiz uzun aciklamalar kaldirildi)
         st.markdown(
             "<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; margin-bottom:8px; letter-spacing:0.06em;'>KLİNİK ÇALIŞMA ALANI</p>",
             unsafe_allow_html=True,
         )
 
         nav_options = [
-            ("🩺 Klinik Triyaj", "Acil Servis ESI Triyajı & Çok Turlu Takip"),
-            ("👨‍⚕️ Doktor Simülatörü", "Hekim Anamnez, Muayene & Tanı"),
-            ("📋 Denetim Kayıtları", "Klinik Görüşme İzleri & Denetim Logları"),
+            "Klinik Triyaj",
+            "Doktor Simülatörü",
+            "Denetim Kayıtları",
         ]
 
-        # Her secenek icin aydinlik/parlayan veya sonuk buyuk kart butonu render edilir
-        for mod_title, mod_desc in nav_options:
+        # Her secenek icin aydinlik/parlayan veya sonuk orantili kart butonu render edilir
+        for mod_title in nav_options:
             is_active = st.session_state.current_module == mod_title
-            btn_label = f"{mod_title}\n{mod_desc}"
             if st.button(
-                btn_label,
+                mod_title,
                 key=f"nav_card_{mod_title}",
                 type="primary" if is_active else "secondary",
                 use_container_width=True,
@@ -686,7 +711,7 @@ def render_sidebar() -> Tuple[str, str, float]:
 
         st.divider()
 
-        # 3. YAPAY ZEKA MODEL BAGLANTISI (GEREKSIZ ACIKLAMALAR KALDIRILDI)
+        # 3. YAPAY ZEKA MODEL BAGLANTISI (Gereksiz uzun aciklama yazilari kaldirildi)
         st.markdown("#### 🤖 AI Model Bağlantısı")
         api_url = st.text_input(
             "AI Sunucu Adresi",
@@ -719,7 +744,7 @@ def render_sidebar() -> Tuple[str, str, float]:
         is_remote = "127.0.0.1" not in api_url and "localhost" not in api_url
         conn_label = "Uzak HTTPS" if is_remote else "Yerel / Gomulu"
 
-        # ASLA SATIR KESILMESI YAPMAYAN VE TAM METIN GOSTEREN TELEMETRI KARTI
+        # ASLA METIN KESILMESI YAPMAYAN VE TAM METIN GOSTEREN TELEMETRI KARTI
         st.markdown(
             f"""
             <div class="telemetry-card">
@@ -745,17 +770,17 @@ def render_sidebar() -> Tuple[str, str, float]:
             unsafe_allow_html=True,
         )
 
-        # Gereksiz telif yazisi kaldirildi
         return st.session_state.current_module, api_url, temperature
 
 
 def render_triage_module(api_url: str, temperature: float):
     """Mod 1: Ust uste soru sorulabilen Cok Turlu Klinik Triyaj ve Konsultasyon ekrani."""
+    # h1 yerine div.brand-header-title kullanilarak URL hash ve zincir link olusumu engellendi
     st.markdown(
         """
         <div class="brand-header">
             <div class="brand-header-left">
-                <h1><span>🩺</span> Klinik Triyaj ve Çok Turlu Konsültasyon</h1>
+                <div class="brand-header-title"><span>🩺</span> Klinik Triyaj ve Çok Turlu Konsültasyon</div>
                 <p>Hasta semptomlarını iletin; sistem ESI aciliyetini derecelendirsin ve takip sorularıyla ayırıcı tanıyı derinleştirsin.</p>
             </div>
             <div class="brand-badge">ACİL SERVİS CDSS</div>
@@ -863,12 +888,12 @@ def render_simulation_module(api_url: str, temperature: float):
     case_map = {c["case_id"]: c for c in cases}
     current_case = case_map[st.session_state.active_case_id]
 
-    # Ust Marka ve Vaka Basligi
+    # Ust Marka ve Vaka Basligi (h1 yerine div.brand-header-title kullanilarak link ve hash olusumu engellendi)
     st.markdown(
         """
         <div class="brand-header">
             <div class="brand-header-left">
-                <h1><span>👨‍⚕️</span> Klinik Vaka Simülatörü — Hekim Anamnez & Tanı Konsolu</h1>
+                <div class="brand-header-title"><span>👨‍⚕️</span> Klinik Vaka Simülatörü — Hekim Anamnez & Tanı Konsolu</div>
                 <p>Bu simülasyonda siz <b>Muayene Eden Hekimsiniz</b>. Karşınızdaki hastaya sorular yöneltin, fizik muayene ve tetkik isteyip kesin tanınızı koyun.</p>
             </div>
             <div class="brand-badge">OSCE SINAV MODU</div>
@@ -1059,11 +1084,12 @@ def render_simulation_module(api_url: str, temperature: float):
 
 def render_audit_logs_module():
     """Mod 3: Kaydedilen tum sohbet ve vaka degerlendirme loglarini inceleme ekrani."""
+    # h1 yerine div.brand-header-title kullanilarak link ve hash olusumu engellendi
     st.markdown(
         """
         <div class="brand-header">
             <div class="brand-header-left">
-                <h1><span>📋</span> Klinik Sohbet Kayıtları ve Denetim Logları</h1>
+                <div class="brand-header-title"><span>📋</span> Klinik Sohbet Kayıtları ve Denetim Logları</div>
                 <p>Sistem üzerinden yapılan tüm konsültasyonlar, vaka simülasyonları ve üretilen cevaplar yasal denetim için kayıt altındadır.</p>
             </div>
             <div class="brand-badge">AUDIT TRAIL</div>
@@ -1135,16 +1161,16 @@ def render_audit_logs_module():
 
 
 def main():
-    """Ana Streamlit uygulama akisini ve sol menudeki buyuk kart navigasyonunu baslatir."""
+    """Ana Streamlit uygulama akisini ve sol menudeki sade parlayan kart navigasyonunu baslatir."""
     configure_page()
     init_session_state()
     # Sol menuden secilen modul, API adresi ve sicaklik ayari alinir
     selected_module, api_url, temperature = render_sidebar()
 
     # Sol menude secilen modulu ekrana aninda yukle
-    if selected_module == "🩺 Klinik Triyaj":
+    if selected_module == "Klinik Triyaj":
         render_triage_module(api_url, temperature)
-    elif selected_module == "👨‍⚕️ Doktor Simülatörü":
+    elif selected_module == "Doktor Simülatörü":
         render_simulation_module(api_url, temperature)
     else:
         render_audit_logs_module()
