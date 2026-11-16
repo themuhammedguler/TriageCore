@@ -23,7 +23,7 @@ SYS_CDSS = (
 
 
 def get_esi_1_cases() -> List[Dict[str, str]]:
-    """ESI-1: Resüsitasyon (Hayati Tehlike / Anında Müdahale) - 40 Vaka."""
+    """ESI-1: Resüsitasyon (Hayati Tehlike / Anında Müdahale) - 60 Vaka."""
     templates = [
         ("Babam aniden yere yığıldı, sesleniyoruz cevap vermiyor, nefes almıyor gibi!",
          "Kardiyak Arrest (Kalp Durması)", "Derhal 112 Acil Servis'i arayın ve sert zemin üzerinde kesintisiz kalp masajına başlayın."),
@@ -55,17 +55,23 @@ def get_esi_1_cases() -> List[Dict[str, str]]:
                 "**🚨 Kırmızı Bayraklar:** Hasta acil kırmızı alan resüsitasyon durumundadır. Sağlık ekipleri gelene kadar yaşamsal destek sürdürülmelidir."
             )
         })
-    # Klinik varyasyonlarla 40 vakaya genişlet
+    prefixes = [
+        "Acil vaka bildirim", "112 Komuta İhbarı", "Acil Servis Kırmızı Alan", "Resüsitasyon Çağrısı",
+        "Ambulans Ekip Raporu", "Kritik Anamnez", "Hasta Yakını Acil Bildirimi", "Acil Durum"
+    ]
     expanded = []
-    for i in range(5):
-        for c in cases:
+    repeat_count = (60 // len(cases)) + 1
+    for i in range(repeat_count):
+        for c_idx, c in enumerate(cases):
+            prefix = prefixes[(i + c_idx) % len(prefixes)]
+            usr = f"[{prefix} #{len(expanded)+1}]: {c['user']}" if i > 0 else c["user"]
             expanded.append({
                 "esi": 1,
                 "specialty": c["specialty"],
-                "user": f"Acil vaka bildirim {len(expanded)+1}: {c['user']}" if i > 0 else c["user"],
+                "user": usr,
                 "assistant": c["assistant"]
             })
-    return expanded[:40]
+    return expanded[:60]
 
 
 def get_esi_2_cases() -> List[Dict[str, str]]:
@@ -124,12 +130,17 @@ def get_esi_2_cases() -> List[Dict[str, str]]:
          "Pediatrik acile gidilmeli, soğuk buhar desteği ve hekim kontrolünde tek doz oral/IV deksametazon veya nebül adrenalin uygulanmalıdır.",
          "İstirahat stridoru, morarma ve burun kanadı solunumu akut solunum yetmezliğini gösterir.")
     ]
+    prefixes = [
+        "Hasta Anamnezi", "Acil Servis Başvurusu", "Klinik Şikayet", "Triyaj Değerlendirmesi",
+        "Poliklinik Sevk Bildirimi", "Acil Tıp Danışması", "Hemşire Gözlemi", "Kritik Belirti"
+    ]
     expanded = []
-    repeat_count = (65 // len(base_scenarios)) + 1
+    repeat_count = (120 // len(base_scenarios)) + 1
     for r in range(repeat_count):
-        for item in base_scenarios:
+        for idx, item in enumerate(base_scenarios):
             q, spec, diag, act, red = item
-            usr = f"Hasta Vaka {len(expanded)+1}: {q}" if r > 0 else q
+            prefix = prefixes[(r + idx) % len(prefixes)]
+            usr = f"[{prefix} #{len(expanded)+1}]: {q}" if r > 0 else q
             expanded.append({
                 "esi": 2,
                 "specialty": spec,
@@ -141,7 +152,7 @@ def get_esi_2_cases() -> List[Dict[str, str]]:
                     f"**🚨 Kırmızı Bayraklar:** {red}"
                 )
             })
-    return expanded[:65]
+    return expanded[:120]
 
 
 def get_esi_3_cases() -> List[Dict[str, str]]:
@@ -180,12 +191,17 @@ def get_esi_3_cases() -> List[Dict[str, str]]:
          "Acil servise başvurunuz; kan sayımı, CRP, idrar kültürü ve böbrek ultrasonografisi yapılarak parenteral antibiyotik başlanmalıdır.",
          "Tansiyon düşüklüğü veya konfüzyon ürosepsis habercisidir.")
     ]
+    prefixes = [
+        "Triyaj Başvurusu", "Acil Sarı Alan", "Hasta Şikayeti", "Laboratuvar/Radyoloji Talebi",
+        "Klinik Muayene", "Akut Şikayet Bildirimi", "Acil Ön Değerlendirme"
+    ]
     expanded = []
-    repeat_count = (75 // len(scenarios)) + 1
+    repeat_count = (140 // len(scenarios)) + 1
     for r in range(repeat_count):
-        for item in scenarios:
+        for idx, item in enumerate(scenarios):
             q, spec, diag, act, red = item
-            usr = f"Triyaj Vaka {len(expanded)+1}: {q}" if r > 0 else q
+            prefix = prefixes[(r + idx) % len(prefixes)]
+            usr = f"[{prefix} #{len(expanded)+1}]: {q}" if r > 0 else q
             expanded.append({
                 "esi": 3,
                 "specialty": spec,
@@ -197,7 +213,7 @@ def get_esi_3_cases() -> List[Dict[str, str]]:
                     f"**🚨 Kırmızı Bayraklar:** {red}"
                 )
             })
-    return expanded[:75]
+    return expanded[:140]
 
 
 def get_esi_4_cases() -> List[Dict[str, str]]:
@@ -244,12 +260,17 @@ def get_esi_4_cases() -> List[Dict[str, str]]:
          "Yarayı 15-20 dakika ılık musluk suyu altında tutunuz. Bülbülleri (su toplayan yeri) kesinlikle patlatmayınız, yanık kremiyle steril kapatınız.",
          "Yanığın genişlemesi, enfekte pürülan akıntı veya yüzde olması durumunda yanık ünitesine başvurunuz.")
     ]
+    prefixes = [
+        "Poliklinik Başvurusu", "Aile Hekimi Danışması", "Yeşil Alan Başvurusu", "Hasta Sorusu",
+        "Klinik Danışma", "Rutin Olmayan Şikayet", "Poliklinik Anamnezi"
+    ]
     expanded = []
-    repeat_count = (80 // len(scenarios)) + 1
+    repeat_count = (120 // len(scenarios)) + 1
     for r in range(repeat_count):
-        for item in scenarios:
+        for idx, item in enumerate(scenarios):
             q, spec, diag, act, red = item
-            usr = f"Poliklinik Başvuru {len(expanded)+1}: {q}" if r > 0 else q
+            prefix = prefixes[(r + idx) % len(prefixes)]
+            usr = f"[{prefix} #{len(expanded)+1}]: {q}" if r > 0 else q
             expanded.append({
                 "esi": 4,
                 "specialty": spec,
@@ -261,7 +282,7 @@ def get_esi_4_cases() -> List[Dict[str, str]]:
                     f"**🚨 Kırmızı Bayraklar:** {red}"
                 )
             })
-    return expanded[:80]
+    return expanded[:120]
 
 
 def get_esi_5_cases() -> List[Dict[str, str]]:
@@ -292,12 +313,17 @@ def get_esi_5_cases() -> List[Dict[str, str]]:
          "Kronik Atopik Egzama / Dermatit", "Dermatoloji (Cildiye) polikliniğinden randevu alarak topikal kortikosteroid tedavisi planlayınız.",
          "Lezyonun etrafında sıcaklık, pürülan kabuklanma veya sellülit gelişirse hekime başvurunuz.")
     ]
+    prefixes = [
+        "Rutin Danışma", "Reçete/Pansuman Talebi", "Sağlık Ocağı Başvurusu", "Aile Hekimliği",
+        "Rutin Kontrol", "Elektif Muayene Talebi", "Poliklinik Randevusu"
+    ]
     expanded = []
-    repeat_count = (40 // len(scenarios)) + 1
+    repeat_count = (60 // len(scenarios)) + 1
     for r in range(repeat_count):
-        for item in scenarios:
+        for idx, item in enumerate(scenarios):
             q, diag, act, red = item
-            usr = f"Rutin Başvuru {len(expanded)+1}: {q}" if r > 0 else q
+            prefix = prefixes[(r + idx) % len(prefixes)]
+            usr = f"[{prefix} #{len(expanded)+1}]: {q}" if r > 0 else q
             expanded.append({
                 "esi": 5,
                 "specialty": "Aile Hekimliği / Elektif Poliklinik",
@@ -309,7 +335,7 @@ def get_esi_5_cases() -> List[Dict[str, str]]:
                     f"**🚨 Kırmızı Bayraklar:** {red}"
                 )
             })
-    return expanded[:40]
+    return expanded[:60]
 
 
 def build_curated_dataset() -> List[Dict]:
